@@ -1,0 +1,22 @@
+---
+description: Rules for managing the top-level media/ library.
+globs: media/**
+alwaysApply: true
+---
+
+# Media Library Rules
+
+These rules define the structure and usage of the top-level `media/` directory, which serves as a shared library for binary media assets.
+
+- **Structure**: Each media item must reside in its own subfolder named `YYYY-MM-DD_short_descriptive_name/`.
+- **Contents**: Each media item's subfolder must contain:
+  - One or more binary assets (e.g., `asset.jpg`, `video.mp4`).
+  - A `meta.md` file (Markdown with frontmatter) describing the media asset. This `meta.md` should include:
+    - `origin` / `provenance` (where it came from).
+    - `description` (what it depicts).
+    - `relevant_entities` / `events` (links to `sources/` IDs or `content/` entity/event pages).
+    - `capture_date` (ISO8601).
+    - `rights` / `license` notes (if applicable).
+- **Read-Only Binary Assets**: While the agent can add new media folders and their `meta.md` files, existing binary media assets within `media/` should generally be treated as read-only. Avoid modifying or deleting them unless explicitly instructed.
+- **Referencing Media**: Markdown files in `sources/` or `content/` should reference media assets using relative paths from the root of the repository (e.g., `../media/YYYY-MM-DD_short_descriptive_name/asset.jpg`).
+- **Website Integration**: For the Fumadocs website, `media/` assets will be mirrored into `public/media/` during the `update-docs` skill execution (Option A in plan) to ensure they are accessible at `/media/...` URLs.

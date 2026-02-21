@@ -1,0 +1,17 @@
+---
+description: Rules for updating Fumadocs content under content/.
+globs: content/**
+alwaysApply: true
+---
+
+# Update Docs Rules
+
+These rules govern the `update-docs` skill, which generates and updates the derived Fumadocs content under `content/` from `sources/` and `ontology/ontology.md`.
+
+- **Derived Content**: All files under `content/` are considered derived from `sources/` and `ontology/ontology.md`. The `update-docs` skill is the primary mechanism for modifying `content/`.
+- **Idempotency**: The `update-docs` skill must operate idempotently. Re-running the skill with the same `sources/` and `ontology/` inputs should produce the same `content/` output, updating existing files rather than creating duplicates.
+- **Provenance**: Each file under `content/` must include frontmatter or a section that clearly links back to the specific `sources/` IDs from which its content was derived (e.g., `source_ids: [source_id_1, source_id_2]`).
+- **Ontology Adherence**: The structure, naming, and content of files under `content/` must strictly conform to the schema defined in `ontology/ontology.md`.
+- **Protected Sections**: When updating `content/` files, sections marked by `<!-- AGENT_PROTECTED_START -->` and `<!-- AGENT_PROTECTED_END -->` markers must be preserved and not overwritten. These sections are reserved for manual user edits.
+- **Fumadocs Compatibility**: Ensure that `content/meta.json` (and any subfolder `meta.json` files) are kept valid and up-to-date to maintain correct navigation and structure within the Fumadocs site.
+- **Media Mirroring**: As part of `update-docs`, relevant binary media assets from `media/` should be copied (mirrored) to `public/media/` to make them accessible via web paths (e.g., `/media/asset.jpg`).

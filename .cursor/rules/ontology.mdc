@@ -1,0 +1,75 @@
+---
+description: Rules for ontology schema and Fumadocs content folder
+globs: ontology/**, content/**
+alwaysApply: false
+---
+
+# Ontology and Content Rules
+
+These rules define the ontology schema, including entity types, event types, relationships, and how these map to the structure and content generation for the `content/` (Fumadocs) directory.
+
+### Ontology Schema Definition (embedded example)
+
+This is an example of the ontology schema contract that the agent should adhere to. It outlines the structure for entities, events, relationships, and their mapping to `content/` folders. This schema can be extended or modified directly within this rule file.
+
+```yaml
+# Example Ontology Definition
+entity_types:
+  - name: Person
+    properties:
+      - name: name
+        type: string
+        required: true
+      - name: email
+        type: string
+        format: email
+      - name: organization
+        type: reference # to an Organization entity
+    doc_path: content/entities/people/
+    template: .cursor/skills/templates/person-entity.md
+
+  - name: Organization
+    properties:
+      - name: name
+        type: string
+        required: true
+      - name: website
+        type: string
+        format: url
+    doc_path: content/entities/organizations/
+    template: .cursor/skills/templates/organization-entity.md
+
+event_types:
+  - name: Meeting
+    properties:
+      - name: date
+        type: string
+        format: date-time
+        required: true
+      - name: participants
+        type: array
+        items:
+          type: reference # to Person entities
+      - name: topic
+        type: string
+    doc_path: content/events/meetings/
+    template: .cursor/skills/templates/meeting-event.md
+
+doc_sections:
+  - name: Docs
+    path: content/docs/
+    description: General articles and knowledge base entries.
+  - name: Narratives
+    path: content/narratives/
+    description: Long-form narrative content derived from multiple sources.
+```
+
+- **Ontology as Schema Contract**: This embedded YAML block within the rule file is the canonical schema for the knowledge system. It defines entity types, event types, relationships, and their mapping to `content/` folders. The agent must read and adhere to this contract when generating `content/`.
+- **Content Generation Target**: `content/` is the sole output target for the `update-docs` skill. All processed, published knowledge lives here.
+- **Stable Identifiers**: Use stable identifiers for entities and documents as defined by the ontology (e.g., filenames, slugs). When referencing, use these stable IDs. Do not invent new names.
+- **Provenance**: Every file under `content/` must include frontmatter or a section linking back to the `sources/` IDs from which it was derived (e.g., `source_ids: [source_id_1, source_id_2]`). It should **not** link directly to `ingest/` files.
+- **Section READMEs**: Each logical section under `content/` (e.g., `content/entities/`, `content/events/`, `content/docs/`) should have a short README or be described in this ontology schema; follow this when placing and formatting content.
+- **Glossary**: Prefer terms from `ontology/glossary.md` (or any user-defined glossary) when creating or updating content under `content/`.
+- **Uncertainty**: When information extraction or inference is uncertain, mark it explicitly in `content/` (e.g., frontmatter `confidence: high | medium | low` or `needs_review: true`, or a dedicated "Needs Review" section).
+- **Source of Truth**: If derived content under `content/` and its `sources/` (or this ontology schema) disagree, the `sources/` (or this ontology schema) is the source of truth. The agent must update the file under `content/` to reflect the canonical source.
+- **Minimal Duplication / Sensitivity**: Ensure one canonical file per entity/document under `content/`. If `sources/` contains sensitive data, avoid verbatim quotes in `content/`; prefer summarizing and referencing the source.

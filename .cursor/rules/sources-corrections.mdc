@@ -1,0 +1,15 @@
+---
+description: Learnings and corrections store for ingest -> sources transformation.
+globs: sources/corrections.md
+alwaysApply: true
+---
+
+# Sources Corrections Rules
+
+This rule defines `sources/corrections.md` as the store for normalization and correction rules applied during the `ingest` and `ingest-force` skill execution, specifically when transforming raw ingest files into `sources/` Markdown.
+
+- **Store**: Maintain a store of learnings and corrections in `sources/corrections.md`. When the agent is corrected on how raw text from `ingest/` should be normalized or represented in `sources/`, add a short, actionable entry here.
+- **Application**: The agent must read `sources/corrections.md` and apply these rules before writing any content to `sources/`.
+- **Format**: Entries should be concise: “Do X” / “Don’t Y” / “When Z, do W”. Examples include consistent speaker names, common transcription misspellings (e.g., `mispeled -> misspelled`), canonical organization names, or preferred terminology for entities.
+
+*(Example entry: `Always spell 'docstilled' with a 'd' at the end, not 'docstill'`)*

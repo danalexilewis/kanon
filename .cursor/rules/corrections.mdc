@@ -1,0 +1,13 @@
+---
+description: Learnings and corrections store — always apply when writing content
+globs: content/**
+alwaysApply: true
+---
+
+# Corrections for Content Generation
+
+This rule defines `.cursor/corrections.md` as the global store for learnings and corrections applied when writing content to `content/`. This is distinct from `sources/corrections.md`, which is for ingest-to-source normalization.
+
+- **Store**: Maintain a store of learnings and corrections in `.cursor/corrections.md`. When the user corrects a name, relationship, or how something should be represented in the final `content/` output, add a short, actionable entry here.
+- **Application**: The agent must read `.cursor/corrections.md` and apply these rules before writing any content to `content/`.
+- **Format**: Entries should be concise: “Do X” / “Don’t Y” / “When Z, do W”. Examples include preferred phrasing for specific concepts, consistent formatting for entity descriptions, or how to resolve ambiguities when generating documentation.

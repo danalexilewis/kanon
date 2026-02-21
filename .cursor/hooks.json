@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": "node hooks/after-file-edit.js"
+      }
+    ],
+    "stop": [
+      {
+        "command": "node hooks/on-stop.js"
+      }
+    ]
+  }
+}

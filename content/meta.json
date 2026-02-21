@@ -1,0 +1,5 @@
+{
+  "title": "Knowledge base",
+  "root": true,
+  "pages": ["docs", "entities", "events"]
+}
