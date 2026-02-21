@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "mode:safe": "node .cursor/scripts/set-protection-mode.js safe",
+    "mode:normal": "node .cursor/scripts/set-protection-mode.js normal",
+    "mode:force": "node .cursor/scripts/set-protection-mode.js force"
   },
   "dependencies": {
     "fumadocs-core": "^15.0.0",

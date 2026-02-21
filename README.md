@@ -40,6 +40,69 @@ If content under `content/` and `sources/` (or `ontology/ontology.md`) disagree,
 
 ---
 
+## Protection modes checklist
+
+Use these modes to keep the pipeline non-destructive and predictable.
+
+### Safe mode (guardrails first)
+
+- [ ] Activate: `npm run mode:safe`.
+- [ ] Hook behavior: edits in non-manifest `ingest/**` and risky `content/**` edits emit **stop-and-revert guidance** in `.cursor/next-step.md`.
+- [ ] Operator behavior: do not overwrite derived output manually; use skills (`ingest`, `update-docs`) to make changes.
+
+### Normal mode (day-to-day operation)
+
+- [ ] Activate: `npm run mode:normal`.
+- [ ] Hook behavior: warnings/reminders are advisory so normal workflows remain fast.
+- [ ] Operator behavior: run `ingest` for raw inputs, update `sources/`/`ontology/`, then run `update-docs`.
+
+### Force mode (exception path only)
+
+- [ ] Activate: `npm run mode:force`.
+- [ ] Confirm risky edits by creating `.cursor/force-mode-confirmation.md` containing `CONFIRM FORCE MODE`.
+- [ ] Use only when normal mode cannot resolve drift; record forced actions in commit/PR notes.
+
+---
+
+## Restore playbook
+
+When in doubt, restore from canonical truth instead of patching generated docs by hand.
+
+1. **Locate rollback truth:**
+   - Canonical content truth: `sources/**`.
+   - Schema truth: `ontology/ontology.md`.
+   - Ingest processing history: `ingest/manifest.json` and `ingest/manifest.md`.
+2. **Regenerate published docs:** run the `update-docs` skill so `content/**` is rebuilt from `sources/**` + `ontology/ontology.md`.
+3. **Never manually edit these unless you are intentionally changing system behavior:**
+   - `ingest/**` files other than `ingest/manifest.json` and `ingest/manifest.md`.
+   - Generated `content/**` when it disagrees with canonical `sources/**` or `ontology/ontology.md`.
+
+---
+
+## Automatic destructive-intent warnings
+
+The `afterFileEdit` hook now reads `.cursor/protection-mode.json` and writes mode-aware warnings to `.cursor/next-step.md` when:
+
+- a tool edits `ingest/**` files other than `ingest/manifest.json` and `ingest/manifest.md`,
+- a tool edits generated `content/**` while `sources/**` changes are still unapplied.
+
+In **safe mode**, warnings include explicit "stop and revert" actions. In **force mode**, risky edits require `.cursor/force-mode-confirmation.md` with `CONFIRM FORCE MODE`.
+
+---
+
+## How this works in Cursor
+
+1. Set the active mode (`safe`, `normal`, or `force`) via npm script.
+2. Keep working as usual in Cursor; hooks run after each file edit.
+3. Read `.cursor/next-step.md` for mode-aware warnings and recommended next skill.
+4. If warnings indicate source/derived drift, run `update-docs` instead of hand-editing generated `content/**`.
+
+```bash
+npm run mode:safe
+npm run mode:normal
+npm run mode:force
+```
+
 ## Run the site
 
 This repo includes a minimal **Fumadocs (Next.js)** app that serves the `content/` folder:
@@ -67,6 +130,8 @@ Open [http://localhost:3000](http://localhost:3000); the knowledge base is at [/
 -   **`.cursor/rules/`** — Contains the new rule set (`folder-contract.mdc`, `ingest.mdc`, `sources.mdc`, `sources-corrections.mdc`, `references.mdc`, `media.mdc`, `ontology.mdc`, `update-docs.mdc`, `corrections-content.mdc`).
 -   **`.cursor/corrections.md`** — Global learnings/corrections the agent applies when writing to `content/`.
 -   **`.cursor/next-step.md`** — Reminders (e.g., unprocessed ingest, stale docs; written by hooks or the agent).
+-   **`.cursor/protection-mode.json`** — Active protection mode (`safe`, `normal`, `force`) consumed by hooks.
+-   **`.cursor/force-mode-confirmation.md`** — Optional explicit force confirmation token (`CONFIRM FORCE MODE`).
 -   **`.cursor/hooks.json`**, **`.cursor/hooks/after-file-edit.js`**, **`.cursor/hooks/on-stop.js`** — Updated hooks for workflow automation.
 
 See **`SETUP.md`** for forking, customizing the ontology, and Fumadocs options.
