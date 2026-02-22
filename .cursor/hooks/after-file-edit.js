@@ -39,7 +39,7 @@ function forceModeConfirmed(root) {
 }
 
 function hasStaleSources(root) {
-  const sourcesDir = path.join(root, 'sources');
+  const sourcesDir = path.join(root, 'src', 'sources');
   const contentManifestJsonPath = path.join(root, 'content', 'manifest.json');
 
   if (!fs.existsSync(sourcesDir) || !fs.existsSync(contentManifestJsonPath)) {
@@ -82,12 +82,12 @@ process.stdin.on('end', () => {
 
     messages.push(`Protection mode: **${mode}**.`);
 
-    const isIngestNonManifest = relativePath.startsWith('ingest/') && !['ingest/manifest.md', 'ingest/manifest.json'].includes(relativePath);
+    const isIngestNonManifest = relativePath.startsWith('src/ingest/') && !['src/ingest/manifest.md', 'src/ingest/manifest.json'].includes(relativePath);
     const isContentEdit = relativePath.startsWith('content/');
 
     if (isIngestNonManifest) {
       messages.push(
-        `⚠️ **Destructive intent warning:** edit detected in \`${relativePath}\`. Raw \`ingest/**\` files are append-only and should not be modified. Only \`ingest/manifest.json\` and \`ingest/manifest.md\` may be updated.`
+        `⚠️ **Destructive intent warning:** edit detected in \`${relativePath}\`. Raw \`src/ingest/**\` files are append-only and should not be modified. Only \`src/ingest/manifest.json\` and \`src/ingest/manifest.md\` may be updated.`
       );
       if (mode === 'safe') {
         messages.push(
@@ -98,7 +98,7 @@ process.stdin.on('end', () => {
 
     if (isContentEdit && hasStaleSources(root)) {
       messages.push(
-        `⚠️ **Destructive intent warning:** edit detected in \`${relativePath}\` while \`sources/**\` and/or the ontology schema (\`.cursor/rules/ontology.mdc\`) are ahead of \`content/**\`. Regenerate with **update-docs** instead of manual content edits.`
+        `⚠️ **Destructive intent warning:** edit detected in \`${relativePath}\` while \`src/sources/**\` and/or the ontology schema (\`.cursor/rules/ontology.mdc\`) are ahead of \`content/**\`. Regenerate with **update-docs** instead of manual content edits.`
       );
       if (mode === 'safe') {
         messages.push('🛑 **Safe mode action:** avoid manual edits in `content/**`; run **update-docs** to regenerate derived output.');
@@ -111,17 +111,17 @@ process.stdin.on('end', () => {
       );
     }
 
-    if (relativePath.startsWith('ingest/') && !relativePath.includes('manifest.md')) {
+    if (relativePath.startsWith('src/ingest/') && !relativePath.includes('manifest.md')) {
       messages.push(
-        `New or updated ingest file: \`${relativePath}\`. Run the **ingest skill** to process it into \`sources/\` and \`media/\` and update the ingest manifests.`
+        `New or updated ingest file: \`${relativePath}\`. Run the **ingest skill** to process it into \`src/sources/\` and \`src/media/\` and update the ingest manifests.`
       );
-    } else if (relativePath.startsWith('sources/') || relativePath === '.cursor/rules/ontology.mdc' || relativePath.startsWith('references/')) {
+    } else if (relativePath.startsWith('src/sources/') || relativePath === '.cursor/rules/ontology.mdc' || relativePath.startsWith('src/references/')) {
       messages.push(
-        `Changes detected in \`${relativePath}\`. Run the **update-docs skill** to reflect these changes in \`content/\`. If \`references/\` changed, consider running **create-ontology skill** first.`
+        `Changes detected in \`${relativePath}\`. Run the **update-docs skill** to reflect these changes in \`content/\`. If \`src/references/\` changed, consider running **create-ontology skill** first.`
       );
-    } else if (relativePath.startsWith('media/')) {
+    } else if (relativePath.startsWith('src/media/')) {
       messages.push(
-        `Changes detected in \`${relativePath}\`. Ensure \`media/meta.md\` exists for new media. Run the **update-docs skill** to reflect these changes in \`content/\` (e.g., mirroring to \`public/media/\`).`
+        `Changes detected in \`${relativePath}\`. Ensure \`src/media/.../meta.md\` exists for new media. Run the **update-docs skill** to reflect these changes in \`content/\` (e.g., mirroring to \`public/media/\`).`
       );
     }
 

@@ -8,10 +8,11 @@ alwaysApply: true
 
 These rules define the purpose and allowed operations within key directories of the knowledge system. The agent must adhere strictly to this contract.
 
-- **`ingest/`**: Raw input only (any file type). Append-only. The agent must **not edit or delete** any file in this directory except for `ingest/manifest.json` and `ingest/manifest.md`.
-- **`sources/`**: Canonical, normalized, user-created source content (Markdown only, with standardized frontmatter). This is the primary output target for the `ingest` skill.
-- **`references/`**: Non-user-created reference materials (e.g., PDFs). Read-only. The agent must **not edit or delete** any file in this directory.
-- **`media/`**: Shared top-level library for binary media assets. The agent can add new media items and their `meta.md` files but should generally not modify existing binary assets.
-- **`ontology/`**: Optional glossary (`ontology/glossary.md`) and README. The **ontology schema** (entity types, event types, doc sections) is defined in **`.cursor/rules/ontology.mdc`**. The agent updates that rule via the `create-ontology` skill when refining the schema.
+- **`src/`**: User-facing content lives here. Non-technical users should work only under `src/`; the rest of the repo is tooling and generated output.
+- **`src/ingest/`**: Raw input only (any file type). Append-only. The agent must **not edit or delete** any file in this directory except for `src/ingest/manifest.json` and `src/ingest/manifest.md`.
+- **`src/sources/`**: Canonical, normalized, user-created source content (Markdown only, with standardized frontmatter). This is the primary output target for the `ingest` skill.
+- **`src/references/`**: Non-user-created reference materials (e.g., PDFs). Read-only. The agent must **not edit or delete** any file in this directory.
+- **`src/media/`**: Shared library for binary media assets. The agent can add new media items and their `meta.md` files but should generally not modify existing binary assets.
+- **`src/ontology/`**: Optional glossary (`src/ontology/glossary.md`) and README. The **ontology schema** (entity types, event types, doc sections) is defined in **`.cursor/rules/ontology.mdc`**. The agent updates that rule via the `create-ontology` skill when refining the schema.
 - **`content/`**: Derived Fumadocs output (published knowledge base). This is the primary output target for the `update-docs` skill.
 - **`.cursor/skills/`**: Cursor skill playbooks (Markdown files). The agent should only create/update these when explicitly asked to define a new skill.

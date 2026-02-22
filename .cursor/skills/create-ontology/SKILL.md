@@ -1,10 +1,10 @@
 # Create Ontology Skill
 
-This skill reads reference materials from the `references/` directory and, guided by a user prompt, produces or updates the **ontology schema** embedded in **`.cursor/rules/ontology.mdc`**. That rule defines entity types, event types, relationships, and their mapping to `content/` folders. The skill may also add or update templates under `.cursor/skills/templates/`.
+This skill reads reference materials from the `src/references/` directory and, guided by a user prompt, produces or updates the **ontology schema** embedded in **`.cursor/rules/ontology.mdc`**. That rule defines entity types, event types, relationships, and their mapping to `content/` folders. The skill may also add or update templates under `.cursor/skills/templates/`.
 
 ## Inputs
 
-- Files under `references/` (PDFs, docs, etc.).
+- Files under `src/references/` (PDFs, docs, etc.).
 - User prompt (specifying ontology requirements, examples, or questions).
 - Existing ontology schema in `.cursor/rules/ontology.mdc` (to update incrementally).
 

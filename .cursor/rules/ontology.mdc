@@ -1,6 +1,6 @@
 ---
 description: Rules for ontology schema and Fumadocs content folder
-globs: ontology/**, content/**
+globs: src/ontology/**, content/**
 alwaysApply: false
 ---
 
@@ -67,9 +67,9 @@ doc_sections:
 - **Ontology as Schema Contract**: This embedded YAML block within the rule file is the canonical schema for the knowledge system. It defines entity types, event types, relationships, and their mapping to `content/` folders. The agent must read and adhere to this contract when generating `content/`.
 - **Content Generation Target**: `content/` is the sole output target for the `update-docs` skill. All processed, published knowledge lives here.
 - **Stable Identifiers**: Use stable identifiers for entities and documents as defined by the ontology (e.g., filenames, slugs). When referencing, use these stable IDs. Do not invent new names.
-- **Provenance**: Every file under `content/` must include frontmatter or a section linking back to the `sources/` IDs from which it was derived (e.g., `source_ids: [source_id_1, source_id_2]`). It should **not** link directly to `ingest/` files.
+- **Provenance**: Every file under `content/` must include frontmatter or a section linking back to the `src/sources/` IDs from which it was derived (e.g., `source_ids: [source_id_1, source_id_2]`). It should **not** link directly to `src/ingest/` files.
 - **Section READMEs**: Each logical section under `content/` (e.g., `content/entities/`, `content/events/`, `content/docs/`) should have a short README or be described in this ontology schema; follow this when placing and formatting content.
-- **Glossary**: Prefer terms from `ontology/glossary.md` (or any user-defined glossary) when creating or updating content under `content/`.
+- **Glossary**: Prefer terms from `src/ontology/glossary.md` (or any user-defined glossary) when creating or updating content under `content/`.
 - **Uncertainty**: When information extraction or inference is uncertain, mark it explicitly in `content/` (e.g., frontmatter `confidence: high | medium | low` or `needs_review: true`, or a dedicated "Needs Review" section).
-- **Source of Truth**: If derived content under `content/` and its `sources/` (or this ontology schema) disagree, the `sources/` (or this ontology schema) is the source of truth. The agent must update the file under `content/` to reflect the canonical source.
-- **Minimal Duplication / Sensitivity**: Ensure one canonical file per entity/document under `content/`. If `sources/` contains sensitive data, avoid verbatim quotes in `content/`; prefer summarizing and referencing the source.
+- **Source of Truth**: If derived content under `content/` and its `src/sources/` (or this ontology schema) disagree, the `src/sources/` (or this ontology schema) is the source of truth. The agent must update the file under `content/` to reflect the canonical source.
+- **Minimal Duplication / Sensitivity**: Ensure one canonical file per entity/document under `content/`. If `src/sources/` contains sensitive data, avoid verbatim quotes in `content/`; prefer summarizing and referencing the source.

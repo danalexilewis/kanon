@@ -28,6 +28,8 @@ isProject: false
 
 # Ingest → Sources → Docs (Ontology-driven) plan
 
+**Note:** User-facing folders (ingest, sources, references, media, ontology) now live under **`src/`**.
+
 ## Goal state (new folder contract)
 
 We’ll evolve the current v1 layout (raw `ingest/` → processed `content/`) into a two-stage system:

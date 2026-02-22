@@ -27,7 +27,7 @@ process.stdin.on('end', () => {
     let msg = '';
 
     // Check for unprocessed ingest files
-    const ingestDir = path.join(root, 'ingest');
+    const ingestDir = path.join(root, 'src', 'ingest');
     const ingestManifestJsonPath = path.join(ingestDir, 'manifest.json');
     let ingestManifest = {};
     if (fs.existsSync(ingestManifestJsonPath)) {
@@ -50,7 +50,7 @@ process.stdin.on('end', () => {
     }
 
     // Check for stale docs (sources changed but content not updated)
-    const sourcesDir = path.join(root, 'sources');
+    const sourcesDir = path.join(root, 'src', 'sources');
     const contentManifestJsonPath = path.join(root, 'content', 'manifest.json');
     let contentManifest = {};
     if (fs.existsSync(contentManifestJsonPath)) {
