@@ -17,7 +17,7 @@ These rules govern the creation, content, and structure of Markdown files within
   - `created_at`: The creation or capture date/time in ISO8601 format.
   - `ingest_paths`: A list of relative paths to the original files in `src/ingest/` from which this source was derived.
   - `ingest_hashes`: A list of SHA256 (or similar) hashes of the original `src/ingest/` files, used for idempotency.
-- **Optional Frontmatter**: Common optional fields include `people`, `orgs`, `tags`, `language`, `confidence`, `needs_review`, and `media_refs` (a list of paths to related media assets in `src/media/`).
+- **Optional Frontmatter**: Common optional fields include `people`, `orgs`, `tags`, `language`, `confidence`, `needs_review`, and **`media_refs`** (a list of repo-root paths to related media in `src/media/`, e.g. `src/media/2025-01-15_screenshot/image.png`). When the source body references or embeds media (e.g. images downloaded during ingest), include those paths in `media_refs` and use the same repo-root link form in the body (e.g. `![caption](src/media/.../file.jpg)` or `[link text](src/media/.../file.jpg)`).
 - **Folder Organization**: Source files must be placed in the appropriate subfolder:
   - `src/sources/documents/`: For processed documents.
   - `src/sources/chats/`: For processed chat logs.

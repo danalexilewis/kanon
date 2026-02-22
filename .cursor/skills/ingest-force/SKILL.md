@@ -10,7 +10,7 @@ This skill re-processes all raw files from the `src/ingest/` directory, regardle
 ## Outputs
 
 - Updated or newly created Markdown files in `src/sources/documents/`, `src/sources/chats/`, `src/sources/transcripts/`, or `src/sources/media/`.
-- Updated binary media files and their corresponding `meta.md` files in `src/media/YYYY-MM-DD_short_descriptive_name/`.
+- Updated binary media in `src/media/YYYY-MM-DD_short_descriptive_name/`, each with **`meta.json`** (and optionally `meta.md`). Image URLs encountered in ingest content are downloaded and stored here; sources reference them as repo-root links.
 - Updated `src/ingest/manifest.json` and `src/ingest/manifest.md`.
 
 ## Key Behaviors
