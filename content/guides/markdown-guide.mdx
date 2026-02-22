@@ -1,0 +1,277 @@
+---
+title: Markdown guide
+description: GFM and Fumadocs Markdown — frontmatter, headings, links, callouts, tables, and more. For code blocks, cards, include, and NPM see the Advanced guide.
+---
+
+<Collapsible title="What's Markdown, GFM, and MDX?">
+**Markdown** is a simple way to write documents in plain text that then get turned into nicely formatted pages—headings, lists, links, and so on. It was created in the early 2000s so people could write readable content without learning HTML or complex editors. You focus on the words; the system handles the formatting.
+
+**GFM** (GitHub Flavored Markdown) is a widely used version of Markdown. GitHub popularized it, and many tools support it. It adds things like tables, strikethrough, and task lists. When we say “Markdown” here, we mean GFM—it’s the same idea, just with a few extra, practical features.
+
+**MDX** is Markdown plus the ability to drop in small “components” (like callouts, cards, or tabs). This site uses Fumadocs, which is built on MDX: you write mostly normal Markdown, and when you need something fancier, you can use those extra building blocks.
+</Collapsible>
+
+You don’t need to understand how all of this works under the hood. The heavy lifting—file structure, pipelines, and turning your content into the final site—can be done with help from AI assistants. What’s worth learning is the **syntax**: how to write headings, bold, lists, links, and so on. Once you know that, you can read and edit your content confidently and get the most out of the system.
+
+Each section below shows the **result** first, then the **Markdown** (or MDX) that produces it. For code blocks, cards, include, and NPM commands, see the [Advanced guide](/docs/guides/advanced-guide).
+
+---
+
+## Frontmatter
+
+Fumadocs supports frontmatter at the top of each page, think of this as the metadata for the page. The `title` field is used as the page title (the main heading in the UI).
+```mdx
+---
+title: This is a document
+description: Optional short description for search and previews.
+---
+
+Your content here.
+```
+
+<Callout type="info" title="Page title">
+Because `title` in frontmatter becomes the page heading, a separate `# Heading` (h1) is usually unnecessary unless you have custom title rendering.
+</Callout>
+
+---
+
+## Headings
+
+Headings use one to six `#` at the **start of a line**. The number of `#` sets the level (one = top of page, six = smallest).
+
+**Output:**
+
+```md
+# Heading 1
+## Heading 2
+### Heading 3
+#### Heading 4
+##### Heading 5
+###### Heading 6
+```
+
+- **Anchors:** Each heading gets an automatic anchor; spaces and invalid characters are sanitized (e.g. `Hello World` → `hello-world`). The table of contents is built from these headings.
+- **Custom anchor:** Add `[#my-slug]` to a heading to set the fragment (e.g. `## Section [#my-section]`). Link to it as `/docs/your-page#my-section`.
+- **Table of contents control:** Use `[!toc]` to hide a heading from the TOC, or `[toc]` so it appears only in the TOC (useful for grouping). See the [Advanced guide](/docs/guides/advanced-guide) for examples.
+
+<Callout type="warn" title="Structure" defaultOpen>
+Use one `#` per page (or none if the page title comes from frontmatter). Use `##` for main sections and `###` for subsections so the table of contents stays clear.
+</Callout>
+
+
+## Text formatting
+
+### Bold and italic
+
+**Bold text** and *italic text* are the most common emphasis.
+
+```md
+**Bold text** and *italic text*
+
+__Bold__ and _italic_ work too.
+```
+
+---
+
+### Strikethrough (GFM)
+
+You can ~~cross something out~~ to show corrections or deprecated items.
+
+```md
+You can ~~cross something out~~ to show corrections.
+```
+
+---
+
+### Inline code
+
+Use `ingest` and `update-docs` for the pipeline. Paths like `src/sources/documents/` stay as code so they're easy to copy.
+
+```md
+Use `ingest` and `update-docs` for the pipeline. Paths like `src/sources/documents/` stay as code.
+```
+
+<Callout type="info" title="When to use">
+Use backticks for skill names, file paths, commands, and any short technical token. It keeps them readable and copy‑friendly.
+</Callout>
+
+To show a backtick inside code, use double backticks: `` `code with `backtick` in it` `` → wrap the inner part in spaces and backticks.
+
+---
+
+### Paragraphs and line breaks
+
+**New paragraphs** need a **blank line** between them. A single newline in the file does not start a new paragraph in the output.
+
+To force a line break without starting a new paragraph, end the line with **two spaces** (invisible in the rendered page).
+
+```md
+First paragraph.
+
+Second paragraph.
+Same paragraph with a line break (two spaces at end of previous line).
+```
+
+---
+
+## Links
+
+In this repo you can use:
+
+- **Absolute internal paths** — e.g. `[Markdown guide](/docs/guides/markdown-guide)`. These use the app’s router (prefetch, no full reload).
+- **External URLs** — e.g. [eddy.works](https://eddy.works). These open in a new tab with `rel="noreferrer noopener"`.
+- **Relative file paths** — e.g. `[Other page](./other.mdx)` or `[Up a folder](../index.mdx)`. Paths are relative to the current MDX file and resolve to the correct doc URL in this setup.
+
+```md
+[Markdown guide](/docs/guides/markdown-guide)
+
+[eddy.works](https://eddy.works)
+
+[Another doc in this folder](./another.mdx)
+```
+
+<Callout type="info" title="When to use">
+Use descriptive link text instead of "click here." Prefer relative paths when linking to nearby docs so links survive renames; use absolute paths when you need a fixed URL.
+</Callout>
+
+---
+
+## Lists
+
+### Unordered (bullets)
+
+- First item
+- Second item
+  - Nested item
+- Back to top level
+
+```md
+- First item
+- Second item
+  - Nested item
+- Back to top level
+```
+
+You can use `-`, `*`, or `+` for bullets; Fumadocs normalizes them.
+
+### Ordered (numbered)
+
+1. First step
+2. Second step
+3. Third step
+
+```md
+1. First step
+2. Second step
+3. Third step
+```
+
+### Task lists (GFM)
+
+- [x] Create ontology
+- [x] Add files to ingest
+- [ ] Run update-docs
+
+```md
+- [x] Create ontology
+- [x] Add files to ingest
+- [ ] Run update-docs
+```
+
+---
+
+## Blockquote
+
+> This is a blockquote. Use it for quotes, callouts from another source, or short notes that should stand apart from the main text.
+
+```md
+> This is a blockquote. Use it for quotes, callouts from another source, or short notes.
+```
+
+<Callout type="info" title="Callouts vs blockquotes">
+For tips, warnings, or structured notes, use the **Callout** component (see Callouts below). Blockquotes are best for quoted content or simple asides.
+</Callout>
+
+---
+
+## Tables (GFM)
+
+| Syntax    | Use for        |
+| --------- | -------------- |
+| **Bold**  | Emphasis       |
+| `code`    | Commands, paths |
+| [Link](https://eddy.works) | References   |
+
+```md
+| Syntax    | Use for        |
+| --------- | -------------- |
+| **Bold**  | Emphasis       |
+| `code`    | Commands, paths |
+| [Link](https://eddy.works) | References   |
+```
+
+The header row is separated by a row of `---` (pipes and alignment are optional but improve readability).
+
+---
+
+## Callouts
+
+Callouts draw attention to tips, warnings, or notes. They’re better than blockquotes when you want a clear label (e.g. “When to use” or “Warning”). They work in any MDX file under `content/`.
+
+### Basic callout (default: info)
+
+<Callout>
+Default callout with no title. Use for short notes or asides.
+</Callout>
+
+```mdx
+<Callout>
+Default callout with no title. Use for short notes or asides.
+</Callout>
+```
+
+### Callout with title and type
+
+Set `title` and `type`. Supported types: `info` (default), `warn`/`warning`, `error`, `success`, `idea`.
+
+<Callout title="When to use" type="info">
+Use **info** for tips, suggestions, or optional approaches.
+</Callout>
+
+<Callout title="Heads up" type="warn">
+Use **warn** for caveats, breaking changes, or “don’t do this” guidance.
+</Callout>
+
+<Callout title="Error" type="error">
+Use **error** sparingly — for dangerous or irreversible actions, or when something will fail.
+</Callout>
+
+<Callout title="Success" type="success">
+Use **success** for confirmations or “you’re done” messages.
+</Callout>
+
+<Callout title="Idea" type="idea">
+Use **idea** for suggestions or alternative approaches.
+</Callout>
+
+```mdx
+<Callout title="When to use" type="info">
+Use **info** for tips and optional approaches.
+</Callout>
+
+<Callout title="Heads up" type="warn">
+Use **warn** for caveats and “don’t do this” guidance.
+</Callout>
+
+<Callout title="Error" type="error">
+Use **error** for dangerous or irreversible actions.
+</Callout>
+```
+
+<Callout type="info" title="Where callouts work">
+Callouts work in any **MDX** file under `content/`. In plain Markdown under `src/sources/`, stick to blockquotes; the **update-docs** skill can generate pages that use callouts if configured.
+</Callout>
+
+---
+
+More resources: [Fumadocs Markdown](https://www.fumadocs.dev/docs/markdown) · [GFM spec](https://github.github.com/gfm/)

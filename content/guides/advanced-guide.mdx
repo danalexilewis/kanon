@@ -1,0 +1,247 @@
+---
+title: Advanced guide
+description: Fumadocs built-in components — Cards, code block options, include, NPM commands, and more. Callouts are in the Markdown guide.
+---
+
+# Advanced guide
+
+<Callout type="info" title="Quick reference only">
+**Check the [official Fumadocs UI components docs](https://www.fumadocs.dev/docs/ui/components#overview) for the most up-to-date information.** This page is a quick reference for common patterns used in this project.
+</Callout>
+
+This page covers **Fumadocs-specific** features you can use in MDX under `content/`. They’re available in generated docs and in any `.mdx` file in `content/`. Each section shows the **output** first, then the **code** that produces it.
+
+For standard Markdown (GFM), see the [Markdown guide](/docs/markdown-guide).
+
+---
+
+Callouts (tips, warnings, notes with types like `info`, `warn`, `error`, `success`, `idea`) are documented in the [Markdown guide](/docs/guides/markdown-guide).
+
+---
+
+## Cards
+
+**Source:** [Fumadocs UI — MDX Components](https://www.fumadocs.dev/docs/ui/components#mdx-components)
+
+Cards are useful for “Further reading,” “Related pages,” or a set of links with titles and short descriptions.
+
+**Output:** (example with one card)
+
+<Cards>
+  <Card href="https://eddy.works" title="eddy.works">
+    Tools and support.
+  </Card>
+  <Card href="/docs/markdown-guide" title="Markdown guide">
+    GFM syntax and when to use what.
+  </Card>
+</Cards>
+
+```mdx
+<Cards>
+  <Card href="https://eddy.works" title="eddy.works">
+    Tools and support.
+  </Card>
+  <Card href="/docs/markdown-guide" title="Markdown guide">
+    GFM syntax and when to use what.
+  </Card>
+</Cards>
+```
+
+<Callout type="info" title="When to use">
+Use Cards at the end of a doc for “See also” or “Next steps.” You can omit `href` for a card that’s not a link (e.g. a short note).
+</Callout>
+
+---
+
+## Code blocks
+
+Use fenced code blocks with three backticks. Add a language name for syntax highlighting (e.g. `txt`, `md`, `json`, `bash`, `ts`, `tsx`). You can add a **title** with `title="My Title"`. For **tab groups**, use `tab="Tab 1"` and `tab="Tab 2"` (etc.) on consecutive code blocks to show them in tabs. Fumadocs uses Shiki (Rehype Code) for highlighting.
+
+**Output:**
+
+```txt title="Example"
+Hello from a code block.
+Use ``` on its own line above and below.
+```
+
+````mdx
+```txt title="Example"
+Hello from a code block.
+Use ``` on its own line above and below.
+```
+````
+
+---
+
+## Code blocks: line numbers and language
+
+**Source:** [Fumadocs UI — MDX Components](https://www.fumadocs.dev/docs/ui/components#mdx-components)
+
+You can turn on line numbers and set the starting number.
+
+**Output:**
+
+```js lineNumbers lineNumbers=4
+function greet() {
+  console.log('Hello');
+  return 0;
+}
+```
+
+````mdx
+```js lineNumbers lineNumbers=4
+function greet() {
+  console.log('Hello');
+  return 0;
+}
+```
+````
+
+- `lineNumbers` — show line numbers.
+- `lineNumbers=4` — start numbering at 4 (optional).
+
+<Callout type="info" title="Language">
+Use a language id after the opening backticks: `js`, `ts`, `json`, `bash`, `md`, `txt`, etc. Shiki supports many languages.
+</Callout>
+
+---
+
+## Code blocks: highlighting and focus
+
+**Source:** [Fumadocs UI — MDX Components](https://www.fumadocs.dev/docs/ui/components#mdx-components)
+
+You can highlight specific lines or words, or show a “diff” style (add/remove). Useful for tutorials.
+
+**Output:**
+
+```tsx
+// This line is highlighted
+<div>Hello</div> // [!code highlight]
+// This word is highlighted: Fumadocs // [!code word:Fumadocs]
+```
+
+(If your theme supports it, you’ll see the highlight on the marked lines.)
+
+````mdx
+```tsx
+// This line is highlighted
+<div>Hello</div> // [!code highlight]
+// This word is highlighted: Fumadocs // [!code word:Fumadocs]
+```
+````
+
+Other Shiki-style comments (when supported):
+
+- `// [!code highlight]` — highlight the line
+- `// [!code word:Something]` — highlight the word “Something”
+- `// [!code --]` — show as removed (red)
+- `// [!code ++]` — show as added (green)
+- `// [!code focus]` — focus (dim others)
+
+<Callout type="warn" title="Theme support">
+Highlight/diff/focus depend on your Fumadocs theme and Shiki setup. If you don’t see the effect, the theme may not enable it.
+</Callout>
+
+---
+
+## Headings: TOC and custom anchors
+
+**Source:** [Fumadocs UI — MDX Components](https://www.fumadocs.dev/docs/ui/components#mdx-components)
+
+Headings get automatic anchors (e.g. `#heading-title`). You can hide a heading from the table of contents or give it a custom anchor.
+
+**Hide from TOC:** add `[!toc]` (hidden from TOC) or `[toc]` (only in TOC, not rendered as a big heading). Useful for grouping TOC entries without extra on-page headings.
+
+**Custom anchor:** add `[#my-slug]` so the heading links to `#my-slug`.
+
+```md
+# My section [#my-section]
+
+## This heading is hidden from TOC [!toc]
+```
+
+Link to it: `/docs/your-page#my-section`. See [Fumadocs Markdown](https://fumadocs.dev/docs/markdown) for full details.
+
+---
+
+## Embed content from another file
+
+In Fumadocs MDX you can pull in another file (Markdown or MDX) with the `<include>` tag. The path is relative to the current file.
+
+```mdx
+<include>./another.mdx</include>
+```
+
+See [Fumadocs Include](https://www.fumadocs.dev/docs/mdx/include) for other usages.
+
+---
+
+## NPM commands
+
+Use a `npm`-tagged code block to show the same install command for multiple package managers (npm, pnpm, yarn, bun). Fumadocs turns it into tabbed commands.
+
+````md
+```npm
+npm i next -D
+```
+````
+
+See [Fumadocs remark-npm](https://www.fumadocs.dev/docs/headless/mdx/remark-npm) for options.
+
+---
+
+## Custom Components
+
+**Source:** [Fumadocs UI — Components overview](https://www.fumadocs.dev/docs/ui/components#overview) (Fumadocs ships Cards, Callouts, Code Blocks, Headings; this project adds the components below.)
+
+We’ve added some custom MDX components to make authoring more like Notion/Obsidian. These are available in any MDX file in `content/` and are styled to match the Fumadocs theme.
+
+### Collapsible (Custom)
+
+**Source:** Project component — `components/mdx/collapsible.tsx`
+
+A simple toggle block to hide and show content. Great for FAQs or optional details.
+
+**Output:**
+
+<Collapsible title="Click to expand">
+This content is hidden by default and expands on click.
+</Collapsible>
+
+```mdx
+<Collapsible title="Click to expand">
+This content is hidden by default and expands on click.
+</Collapsible>
+```
+
+- `title`: The text displayed on the toggle (can be Markdown/MDX).
+- `defaultOpen`: `true` or `false` (defaults to `false`).
+
+### Badge (Custom)
+
+**Source:** Project component — `components/mdx/badge.tsx`
+
+Small labels for highlighting status, categories, or keywords.
+
+**Output:**
+
+<Badge variant="success">New</Badge> <Badge variant="warning">Beta</Badge> <Badge variant="danger">Deprecated</Badge>
+
+```mdx
+<Badge variant="success">New</Badge> <Badge variant="warning">Beta</Badge> <Badge variant="danger">Deprecated</Badge>
+```
+
+- `variant`: `default` | `secondary` | `success` | `warning` | `danger`
+
+## Summary
+
+| Feature      | Use for |
+| ------------ | ------- |
+| **Cards**    | “Further reading,” related links with title + description. |
+| **Code**     | `lineNumbers`, `lineNumbers=n`, and Shiki comments for highlight/diff/focus. |
+| **Headings** | `[#slug]` for custom anchors, `[!toc]` / `[toc]` for TOC control. |
+| **Frontmatter** | `title`, `description` for each page. |
+| **Include**  | `<include>./file.mdx</include>` to pull in another file (Fumadocs MDX). |
+| **NPM commands** | Code block with language `npm` for tabbed install commands (npm, pnpm, yarn, bun). |
+
+For the full list and latest details, see the [Fumadocs UI components docs](https://www.fumadocs.dev/docs/ui/components#overview) and [Fumadocs docs](https://www.fumadocs.dev/docs).
