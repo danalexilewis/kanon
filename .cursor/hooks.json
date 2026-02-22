@@ -2,17 +2,12 @@
   "version": 1,
   "hooks": {
     "afterFileEdit": [
-      {
-        "command": "node hooks/after-file-edit.js"
-      }
+      { "command": "node hooks/after-file-edit.js" },
+      { "command": "node hooks/format-markdown.js" }
     ],
     "stop": [
-      {
-        "command": "node hooks/on-stop.js"
-      },
-      {
-        "command": "node hooks/memory-reminder.js"
-      }
+      { "command": "node hooks/on-stop.js" },
+      { "command": "node hooks/memory-reminder.js" }
     ]
   }
 }
