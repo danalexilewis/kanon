@@ -1,0 +1,5 @@
+{
+  "mode": "normal",
+  "updatedAt": "2026-02-21T09:45:26.450Z",
+  "notes": "Switch with: node .cursor/scripts/set-protection-mode.js <safe|normal|force>"
+}
