@@ -19,6 +19,7 @@
     "placeholder": "^1.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-player": "^3.4.0",
     "twoslash": "^0.3.6"
   },
   "devDependencies": {

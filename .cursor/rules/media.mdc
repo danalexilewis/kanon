@@ -1,19 +1,21 @@
 ---
 description: Rules for managing the top-level media/ library.
-globs: src/media/**
+globs: public/media/**
 alwaysApply: true
 ---
 
 # Media Library Rules
 
-These rules define the structure and usage of the `src/media/` directory, which serves as a shared library for binary media assets. **All ingested media** (including images downloaded from URLs during ingest) must end up here.
+These rules define the structure and usage of the `public/media/` directory, which serves as a shared library for binary media assets. **All ingested media** (including images downloaded from URLs during ingest) must end up here.
 
 - **Structure**: Each media item must reside in its own subfolder named `YYYY-MM-DD_short_descriptive_name/`.
 - **Contents**: Each media item's subfolder must contain:
   - One or more binary assets (e.g., `asset.jpg`, `video.mp4`).
   - A **`meta.json`** file with relevant metadata (required). Suggested fields: `origin`, `provenance`, `description`, `source_url` (for downloaded URLs), `capture_date` (ISO8601), `rights`, `relevant_entities`, `relevant_events`.
   - Optionally a `meta.md` file (Markdown with frontmatter) for longer human-readable description, provenance, and links to `src/sources/` IDs or `content/` pages.
-- **Ingest and image URLs**: When the ingest (or ingest-force) skill encounters a URL that points to an image asset in raw ingest content, the agent must download that image and place it in a new subfolder under `src/media/` (using the folder naming convention above), add the binary file, and create `meta.json` (and optionally `meta.md`). The produced source in `src/sources/` must reference the media as a link (repo-root path, e.g. `src/media/YYYY-MM-DD_short_descriptive_name/asset.jpg`).
+- **Ingest and image URLs**: When the ingest (or ingest-force) skill encounters a URL that points to an image asset in raw ingest content, the agent must download that image and place it in a new subfolder under `public/media/` (using the folder naming convention above), add the binary file, and create `meta.json` (and optionally `meta.md`). The produced source in `src/sources/` must reference the media as a link (repo-root path, e.g. `public/media/YYYY-MM-DD_short_descriptive_name/asset.jpg`).
+- **Audio assets**: Download to `public/media/YYYY-MM-DD_short_descriptive_name/`. Reference in sources; render with `<AudioPlayer>` in content MDX.
+- **Video URLs (external)**: Do NOT download. Keep the URL as-is in the source. Render with `<VideoPlayer>` in content MDX.
 - **Read-Only Binary Assets**: While the agent can add new media folders and their metadata files, existing binary media assets within `src/media/` should generally be treated as read-only. Avoid modifying or deleting them unless explicitly instructed.
-- **Referencing Media**: Markdown in `src/sources/` references media using paths from the repo root (e.g., `src/media/YYYY-MM-DD_short_descriptive_name/asset.jpg`). In `content/` (Fumadocs), use web paths after mirroring: `/media/YYYY-MM-DD_short_descriptive_name/asset.jpg`.
-- **Website Integration**: During `update-docs`, `src/media/` is mirrored to `public/media/` so assets are available at `/media/...` URLs. Generated docs content must embed images using these paths so Fumadocs (and the ImageZoom component) can display them.
+- **Referencing Media**: Markdown in `src/sources/` references media using paths from the repo root (e.g., `public/media/YYYY-MM-DD_short_descriptive_name/asset.jpg`). In `content/` (Fumadocs), use web paths: `/media/YYYY-MM-DD_short_descriptive_name/asset.jpg`.
+- **Website Integration**: Assets in `public/media/` are directly available at `/media/...` URLs. Generated docs content must embed images/audio/video using these paths/URLs.

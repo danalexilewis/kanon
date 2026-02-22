@@ -17,7 +17,7 @@ For document content corrections, see `src/sources/corrections.md` and `.cursor/
 
 ## Patterns That Work
 
-- **Media in ingest/update-docs**: Image URLs in ingest content are downloaded to `src/media/YYYY-MM-DD_slug/` with `meta.json`; sources reference them as repo-root links. Update-docs mirrors `src/media/` → `public/media/` and embeds images in content with `/media/...` paths; `mdx-components.tsx` uses Fumadocs `ImageZoom` for all `img` so images get zoom.
+- **Media in ingest/update-docs**: Image and audio URLs in ingest content are downloaded to `public/media/YYYY-MM-DD_slug/` with `meta.json`; video URLs are kept as-is. Sources reference downloaded media as repo-root links or external video URLs. `mdx-components.tsx` uses Fumadocs `ImageZoom` for images, and new `<AudioPlayer>` and `<VideoPlayer>` components for audio/video, with offline awareness.
 
 ## Patterns That Don't Work
 

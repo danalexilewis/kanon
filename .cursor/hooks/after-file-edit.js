@@ -67,15 +67,15 @@ process.stdin.on('end', () => {
 
     if (relativePath.startsWith('src/ingest/') && !relativePath.includes('manifest.md')) {
       messages.push(
-        `New or updated ingest file: \`${relativePath}\`. Run the **ingest skill** to process it into \`src/sources/\` and \`src/media/\` and update the ingest manifests.`
+        `New or updated ingest file: \`${relativePath}\`. Run the **ingest skill** to process it into \`src/sources/\` and \`public/media/\` and update the ingest manifests.`
       );
     } else if (relativePath.startsWith('src/sources/') || relativePath === '.cursor/rules/ontology.mdc' || relativePath.startsWith('src/references/')) {
       messages.push(
         `Changes detected in \`${relativePath}\`. Run the **update-docs skill** to reflect these changes in \`content/\`. If \`src/references/\` changed, consider running **create-ontology skill** first.`
       );
-    } else if (relativePath.startsWith('src/media/')) {
+    } else if (relativePath.startsWith('public/media/')) {
       messages.push(
-        `Changes detected in \`${relativePath}\`. Ensure \`src/media/.../meta.md\` exists for new media. Run the **update-docs skill** to reflect these changes in \`content/\` (e.g., mirroring to \`public/media/\`).`
+        `Changes detected in \`${relativePath}\`. Ensure \`public/media/.../meta.md\` exists for new media. Run the **update-docs skill** to reflect these changes in \`content/\`.`
       );
     }
 

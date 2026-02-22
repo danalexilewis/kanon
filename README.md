@@ -21,7 +21,7 @@ A Cursor-based **ingest → sources → ontology** template for building a **kno
 - **`src/ingest/`** — Drop raw material here (transcripts, notes, meeting dumps). Append-only; don’t edit files here except to add new ones.
 - **`src/sources/`** — Canonical Markdown sources. Edit these or let the ingest skill populate them.
 - **`src/references/`** — Reference material (PDFs, docs). Read-only; used when building the ontology.
-- **`src/media/`** — Media library (images, videos). Each item in its own folder with a `meta.md`.
+- **`public/media/`** — Media library (images, videos). Each item in its own folder with a `meta.md`.
 - **`src/ontology/`** — Optional glossary and README. The *schema* lives in `.cursor/rules/ontology.mdc`; the agent reads that to generate `content/`.
 
 Don’t touch the rest of the repo unless you’re changing how the system works. The site is built from **`content/`**, which is generated from `src/sources/` and the ontology.
@@ -40,7 +40,7 @@ This template implements a three-stage knowledge pipeline. User-facing content l
 
 - `src/sources/`: The canonical, normalized “user-created” source corpus (Markdown only, with frontmatter). The agent outputs to `src/sources/` when running the `ingest` or `ingest-force` skills.
 - `src/references/`: Non-user-created reference material (PDFs, docs, links). Read-only; used as context when building the ontology. The agent updates the ontology schema in `.cursor/rules/ontology.mdc` when running `create-ontology`.
-- `src/media/`: Shared media library for binary assets (images, videos, etc.). Managed by the agent and linked from `src/sources/` and `content/`.
+- `public/media/`: Shared media library for binary assets (images, videos, etc.). Managed by the agent and linked from `src/sources/` and `content/`.
 
 3. **Docs Stage (Fumadocs Output):** Canonical sources are rendered into a published knowledge base.
 
@@ -52,12 +52,12 @@ This template implements a three-stage knowledge pipeline. User-facing content l
 ## Workflow
 
 1. **Add** raw material to `src/ingest/`. The `afterFileEdit` hook will remind you to run the `ingest` skill.
-2. **Run** the `ingest` skill to process files from `src/ingest/` into `src/sources/` and `src/media/`, and update `src/ingest/manifest.json` and `src/ingest/manifest.md`.
+2. **Run** the `ingest` skill to process files from `src/ingest/` into `src/sources/` and `public/media/`, and update `src/ingest/manifest.json` and `src/ingest/manifest.md`.
 3. **Add** reference material to `src/references/` (optional). The `afterFileEdit` hook will remind you to run `create-ontology`.
 4. **Run** the `create-ontology` skill (using `src/references/` and a user prompt) to define or refine the schema in `.cursor/rules/ontology.mdc`.
 5. **Edit** `src/sources/` files directly or ensure they are up-to-date after ingest. The `afterFileEdit` hook will remind you to run `update-docs`.
 6. **Run** the `update-docs` skill to generate/update the Fumadocs content under `content/` based on `src/sources/` and the ontology schema in `.cursor/rules/ontology.mdc`.
-7. **Result:** `src/sources/`, `src/media/`, and `content/` are updated. The site can be built from `content/` with Fumadocs.
+7. **Result:** `src/sources/`, `public/media/`, and `content/` are updated. The site can be built from `content/` with Fumadocs.
 
 ---
 
@@ -112,7 +112,7 @@ Open [http://localhost:3000](http://localhost:3000); the knowledge base is at [/
 
 ## Repo layout highlights
 
-- **`src/`** — User-facing content: ingest, sources, references, media, ontology. Non-technical users work here.
+- **`src/`** — User-facing content: ingest, sources, references, ontology. Non-technical users work here.
 - `**src/ingest/manifest.json**` — Machine-readable status of processed ingest files (updated by the agent).
 - `**src/ingest/manifest.md**` — Human-readable table of processed ingest files (generated from JSON).
 - `**src/sources/corrections.md**` — Learnings/corrections applied during `ingest` (Ingest → Sources normalization).

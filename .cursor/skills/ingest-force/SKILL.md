@@ -1,6 +1,6 @@
 # Ingest Force Skill
 
-This skill re-processes all raw files from the `src/ingest/` directory, regardless of their current status in `src/ingest/manifest.json`. It performs the same normalization, media extraction/copying, and manifest updates as the `ingest` skill.
+This skill re-processes all raw files from the `src/ingest/` directory, regardless of their current status in `src/ingest/manifest.json`. It performs the same normalization, media extraction/copying to `public/media/`, and manifest updates as the `ingest` skill.
 
 ## Inputs
 
@@ -9,8 +9,8 @@ This skill re-processes all raw files from the `src/ingest/` directory, regardle
 
 ## Outputs
 
-- Updated or newly created Markdown files in `src/sources/documents/`, `src/sources/chats/`, `src/sources/transcripts/`, or `src/sources/media/`.
-- Updated binary media in `src/media/YYYY-MM-DD_short_descriptive_name/`, each with **`meta.json`** (and optionally `meta.md`). Image URLs encountered in ingest content are downloaded and stored here; sources reference them as repo-root links.
+- Updated or newly created Markdown files in `src/sources/documents/`, `src/sources/chats/`, or `src/sources/transcripts/`.
+- Updated binary media in `public/media/YYYY-MM-DD_short_descriptive_name/`, each with **`meta.json`** (and optionally `meta.md`). Image and audio URLs encountered in ingest content are downloaded and stored here; video URLs are kept as-is. Sources reference downloaded media as repo-root links or external video URLs.
 - Updated `src/ingest/manifest.json` and `src/ingest/manifest.md`.
 
 ## Key Behaviors

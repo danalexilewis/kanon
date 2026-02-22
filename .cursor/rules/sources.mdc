@@ -11,17 +11,16 @@ These rules govern the creation, content, and structure of Markdown files within
 - **Format**: All files under `src/sources/` must be Markdown (`.md` or `.mdx`) with a YAML frontmatter block at the top.
 - **Standardized Frontmatter**: Each source file must include the following frontmatter fields:
   - `id`: A stable, unique identifier for the source (e.g., derived from date and slug).
-  - `source_type`: One of `document`, `chat`, `transcript`, or `media`.
+  - `source_type`: One of `document`, `chat`, or `transcript`.
   - `weight`: A numeric value representing the source's importance (e.g., `1.0` for documents, `0.7` for chats, `0.5` for transcripts, `0.4` for media).
   - `title`: A descriptive title for the source.
   - `created_at`: The creation or capture date/time in ISO8601 format.
   - `ingest_paths`: A list of relative paths to the original files in `src/ingest/` from which this source was derived.
   - `ingest_hashes`: A list of SHA256 (or similar) hashes of the original `src/ingest/` files, used for idempotency.
-- **Optional Frontmatter**: Common optional fields include `people`, `orgs`, `tags`, `language`, `confidence`, `needs_review`, and **`media_refs`** (a list of repo-root paths to related media in `src/media/`, e.g. `src/media/2025-01-15_screenshot/image.png`). When the source body references or embeds media (e.g. images downloaded during ingest), include those paths in `media_refs` and use the same repo-root link form in the body (e.g. `![caption](src/media/.../file.jpg)` or `[link text](src/media/.../file.jpg)`).
+- **Optional Frontmatter**: Common optional fields include `people`, `orgs`, `tags`, `language`, `confidence`, `needs_review`, and **`media_refs`** (a list of repo-root paths to related media in `public/media/`, e.g. `public/media/2025-01-15_screenshot/image.png`). When the source body references or embeds media (e.g. images downloaded during ingest), include those paths in `media_refs` and use the same repo-root link form in the body (e.g. `![caption](public/media/.../file.jpg)` or `[link text](public/media/.../file.jpg)`).
 - **Folder Organization**: Source files must be placed in the appropriate subfolder:
   - `src/sources/documents/`: For processed documents.
   - `src/sources/chats/`: For processed chat logs.
   - `src/sources/transcripts/`: For processed audio/video transcripts.
-  - `src/sources/media/`: For Markdown metadata/notes related to binary media assets (which live in `src/media/`).
 - **Protected Sections**: When source files are updated by skills (e.g., `ingest`, `ingest-force`), sections marked with `<!-- AGENT_PROTECTED_START -->` and `<!-- AGENT_PROTECTED_END -->` markers must be preserved and not overwritten.
 - **Source of Truth**: The `src/sources/` directory is the canonical representation of user-created knowledge. If `src/sources/` content and `content/` (Fumadocs output) disagree, `src/sources/` is the source of truth; `content/` should be updated to reflect `src/sources/`.

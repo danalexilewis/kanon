@@ -1,0 +1,3 @@
+# Media Library
+
+Shared library for binary media assets (images, videos, audio, etc.). All ingested media—including images downloaded from URLs during ingest—live in `public/media/`. Each item is in its own subfolder `YYYY-MM-DD_short_descriptive_name/` with the binary file(s) and a **`meta.json`** (required) with origin, description, and other metadata; optional `meta.md` for longer prose. Sources in `src/sources/` reference assets by repo-root path (e.g. `public/media/.../file.jpg`). The docs site serves this folder at `/media/...`; use those paths in `content/` MDX to embed images with zoom.

@@ -6,6 +6,19 @@ alwaysApply: true
 
 # Update Docs Rules
 
+## Inputs
+
+- Markdown files from `src/sources/documents/`, `src/sources/chats/`, `src/sources/transcripts/`.
+- Ontology schema in `.cursor/rules/ontology.mdc` (defines how content should be structured and populated in `content/`).
+- Media assets (images, audio, video URLs) in `public/media/` (referenced by sources via repo-root paths).
+- `content/manifest.json` (optional, to track which sources have been applied; use keys like `src/sources/...`).
+- Existing files under `content/` (to update incrementally).
+
+## Outputs
+
+- Markdown (or MDX) files in `content/docs/`, `content/entities/`, `content/events/`, and any new sections defined by the ontology.
+- Updated `content/meta.json` and `content/**/meta.json` files for Fumadocs navigation.
+
 These rules govern the `update-docs` skill, which generates and updates the derived Fumadocs content under `content/` from `src/sources/` and the ontology schema in `.cursor/rules/ontology.mdc`.
 
 - **Derived Content**: All files under `content/` are considered derived from `src/sources/` and the ontology schema. The `update-docs` skill is the primary mechanism for modifying `content/`.
@@ -14,5 +27,9 @@ These rules govern the `update-docs` skill, which generates and updates the deri
 - **Ontology Adherence**: The structure, naming, and content of files under `content/` must strictly conform to the schema defined in `.cursor/rules/ontology.mdc`.
 - **Protected Sections**: When updating `content/` files, sections marked by `<!-- AGENT_PROTECTED_START -->` and `<!-- AGENT_PROTECTED_END -->` markers must be preserved and not overwritten. These sections are reserved for manual user edits.
 - **Fumadocs Compatibility**: Ensure that `content/meta.json` (and any subfolder `meta.json` files) are kept valid and up-to-date to maintain correct navigation and structure within the Fumadocs site.
-- **Media Mirroring**: As part of `update-docs`, mirror `src/media/` to `public/media/` so assets are available at `/media/...` URLs.
-- **Embedding images**: Generated content under `content/` must embed images referenced in `src/sources/` (via `media_refs` or inline links). Use web paths `/media/YYYY-MM-DD_short_descriptive_name/filename.ext` in MDX. Place each image **after** the related block of text; the docs site uses Fumadocs ImageZoom for `img` elements, so standard Markdown image syntax in MDX gets zoom automatically.
+- **Embedding media in content**: When generating or updating `content/` pages from `src/sources/`:
+  - Resolve media references (frontmatter `media_refs` and any `public/media/...` links in the source body) to **web paths**: `/media/YYYY-MM-DD_short_descriptive_name/asset.jpg` (same relative path under `public/media/`).
+  - For **images**: Embed using standard Markdown image syntax, e.g. `![alt text](/media/YYYY-MM-DD_short_descriptive_name/asset.jpg)`, so Fumadocs (and the ImageZoom component) can render them.
+  - For **audio**: Use the `<AudioPlayer>` component, e.g. `<AudioPlayer src="/media/YYYY-MM-DD_short_descriptive_name/audio.mp3" title="Audio title" />`.
+  - For **video URLs**: Use the `<VideoPlayer>` component, e.g. `<VideoPlayer url="https://www.youtube.com/watch?v=abc123" title="Video title" />`.
+  - **Placement**: Place each media item **after** the block of text it is associated with, so the page reads naturally (text first, then the related media). Format the layout so media is clearly tied to the preceding content (e.g. a short caption or proximity to the relevant paragraph).

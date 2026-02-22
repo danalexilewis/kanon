@@ -16,7 +16,7 @@ This template implements a three-stage knowledge pipeline:
 
 -   **Ontology Schema** — The schema (entity types, frontmatter, sections) is defined in **`.cursor/rules/ontology.mdc`**. This is the central contract for the knowledge base. Use the `create-ontology` skill to build or refine the embedded schema in that rule, potentially using `src/references/` as input.
 -   **`src/sources/` Content Layout** — Organize canonical Markdown files under `src/sources/documents/`, `src/sources/chats/`, `src/sources/transcripts/`, and `src/sources/media/`. Each file should adhere to the standardized frontmatter defined in the `sources.mdc` rule.
--   **`src/media/` Library** — Manage binary media assets in `src/media/`. Each asset should be in a `YYYY-MM-DD_short_descriptive_name/` subfolder with a `meta.md` file describing it.
+-   **`public/media/` Library** — Manage binary media assets in `public/media/`. Each asset should be in a `YYYY-MM-DD_short_descriptive_name/` subfolder with a `meta.md` file describing it.
 -   **Fumadocs Output Layout (`content/`)** — The `content/` folder is the output of the `update-docs` skill. Its structure is dictated by the ontology schema in `.cursor/rules/ontology.mdc` and `content/meta.json`. You can add or rename sections (e.g., `content/docs/`, `content/entities/`, `content/events/`, `content/narratives/`) and update the `meta.json` files so Fumadocs builds the site correctly (e.g., `pages` array).
 -   **Glossary** — Optional: maintain `src/ontology/glossary.md` with preferred terms; the agent will prefer these when writing to `src/sources/` and `content/`.
 -   **Corrections / Learnings** — Two types of correction stores:
@@ -32,11 +32,11 @@ This template leverages Cursor rules to guide the agent's behavior. Key rules in
 | Rule | When it applies | Purpose |
 | :------------------------------ | :---------------------------------- | :------------------------------------------------------------------------------------------------- |
 | **`folder-contract.mdc`** | Always | Defines the purpose and allowed operations within key directories. |
-| **`ingest.mdc`** | Working with `src/ingest/**` | Ensures `src/ingest/` is append-only, specifies outputs to `src/sources/` and `src/media/`, and enforces manifest updates. |
+| **`ingest.mdc`** | Working with `src/ingest/**` | Ensures `src/ingest/` is append-only, specifies outputs to `src/sources/` and `public/media/`, and enforces manifest updates. |
 | **`sources.mdc`** | Working with `src/sources/**` | Enforces Markdown-only, standardized frontmatter, and folder organization for canonical sources. |
 | **`sources-corrections.mdc`** | During Ingest → Sources transformation | Defines `src/sources/corrections.md` for normalizing ingest text. |
 | **`references.mdc`** | Working with `src/references/**` | Ensures `src/references/` is read-only. |
-| **`media.mdc`** | Working with `src/media/**` | Defines the structure and `meta.md` contract for media assets in `src/media/`. |
+| **`media.mdc`** | Working with `public/media/**` | Defines the structure and `meta.md` contract for media assets in `public/media/`. |
 | **`ontology.mdc`** | Working with `src/ontology/**`, `content/**` | Defines the ontology schema (embedded in the rule) and sets expectations for `content/` generation. |
 | **`update-docs.mdc`** | During Sources → Docs transformation | Ensures `content/` is derived, `update-docs` is idempotent, and preserves protected sections. |
 | **`corrections-content.mdc`** | Always (when writing to `content/`) | Defines `.cursor/corrections.md` for global corrections when generating `content/`.
@@ -47,7 +47,7 @@ This template leverages Cursor rules to guide the agent's behavior. Key rules in
 
 This repo uses Cursor’s [hooks](https://cursor.com/changelog#hooks-beta) to automate reminders and workflow triggers:
 
--   **`afterFileEdit`** — If a relevant file (`src/ingest/`, `src/sources/`, `.cursor/rules/ontology.mdc`, `src/references/`, `src/media/`) is edited, a reminder is written to `.cursor/next-step.md` to run the appropriate skill (`ingest`, `create-ontology`, `update-docs`).
+-   **`afterFileEdit`** — If a relevant file (`src/ingest/`, `src/sources/`, `.cursor/rules/ontology.mdc`, `src/references/`, `public/media/`) is edited, a reminder is written to `.cursor/next-step.md` to run the appropriate skill (`ingest`, `create-ontology`, `update-docs`).
 -   **`stop`** — When the task stops, it checks for unprocessed `src/ingest/` files or `src/sources/` files that have changed but haven't been reflected in `content/` (using `content/manifest.json`), and writes a suggestion to `.cursor/next-step.md`.
 
 Scripts live in `.cursor/hooks/` and are driven by `.cursor/hooks.json`.
@@ -58,7 +58,7 @@ Scripts live in `.cursor/hooks/` and are driven by `.cursor/hooks.json`.
 
 This repo also includes Cursor skills in `.cursor/skills/`. Each skill is in its own folder with a `SKILL.md` file so Cursor can load it:
 
--   `ingest/SKILL.md`: Processes raw files from `src/ingest/` into `src/sources/` and `src/media/`.
+-   `ingest/SKILL.md`: Processes raw files from `src/ingest/` into `src/sources/` and `public/media/`.
 -   `ingest-force/SKILL.md`: Re-processes all ingest files, useful for updates.
 -   `create-ontology/SKILL.md`: Builds or refines the ontology schema in `.cursor/rules/ontology.mdc` from `src/references/` and user prompts.
 -   `update-docs/SKILL.md`: Generates/updates `content/` based on `src/sources/` and the ontology schema in `.cursor/rules/ontology.mdc`.
