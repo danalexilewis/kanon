@@ -9,6 +9,9 @@
     "stop": [
       {
         "command": "node hooks/on-stop.js"
+      },
+      {
+        "command": "node hooks/memory-reminder.js"
       }
     ]
   }

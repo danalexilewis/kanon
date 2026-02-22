@@ -12,7 +12,7 @@ For document content corrections, see `src/sources/corrections.md` and `.cursor/
 
 ## Dev Preferences
 
-*(None yet.)*
+- **Cursor hooks**: When asked to create or add hooks, add the script under `.cursor/hooks/` and register it in `.cursor/hooks.json` (project-level hooks). Use the same pattern as existing hooks: Node scripts reading JSON from stdin, `workspace_roots` for repo root, commands like `node hooks/<name>.js`.
 
 ## Patterns That Work
 
@@ -24,4 +24,5 @@ For document content corrections, see `src/sources/corrections.md` and `.cursor/
 
 ## Environment Notes
 
-*(None yet.)*
+- **`window` / TypeScript in this repo**: `app/sw.ts` has `/// <reference lib="webworker" />`. Because that file is included in the main tsconfig via `**/*.ts`, the webworker lib is applied to the whole program and `window` is not in scope for other files (e.g. client components). **Fix**: exclude `app/sw.ts` from `tsconfig.json` `exclude`. The SW is built by esbuild (Serwist), not by the main TS build, so excluding it is safe.
+- **Offline detection in client components**: Prefer React’s `useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)` for `navigator.onLine` (and similar browser state). It’s SSR-safe and avoids direct `window` use during render; use a server snapshot that returns a safe default (e.g. `true` for “online”).

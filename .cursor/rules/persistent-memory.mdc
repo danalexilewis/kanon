@@ -11,9 +11,10 @@ Maintains project-wide persistent memory for **development, tooling, and system 
 
 Every request MUST start by reading `.cursor/memory.md`. Internalize corrections, preferences, and patterns. Do not announce that you are reading it.
 
-## 2. Update Last
+## 2. Update Last (mandatory hook)
 
-At the end of any response where you did substantive work, update `.cursor/memory.md` as your last action.
+**Trigger**: When you fix a bug, add a pattern, or discover an environment/tooling quirk, you MUST update `.cursor/memory.md` in the same response.
+
 
 ### What to log
 

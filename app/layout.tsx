@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import './globals.css';
 import { SerwistProvider } from "@/app/serwist";
+import { OfflineBadge } from "@/app/components/OfflineBadge";
 
 const APP_NAME = "Kanon Knowledge Base";
 const APP_DEFAULT_TITLE = "Kanon Knowledge Base";
@@ -57,6 +58,7 @@ export default function RootLayout({
         <RootProvider>
           <SerwistProvider swUrl="/serwist/sw.js">
             {children}
+            <OfflineBadge />
           </SerwistProvider>
         </RootProvider>
       </body>
