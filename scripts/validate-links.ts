@@ -29,33 +29,22 @@ function pathToUrl(filePath: string): string | undefined {
   return slugPart ? `${BASE_URL}/${slugPart}` : BASE_URL;
 }
 
-/** Collect slugs for docs/[[...slug]]: paths under content/docs/ (and index as []). */
+/** Collect slugs for docs/[[...slug]]: all content/ paths (index → [], else path segments). */
 function getDocSlugs(): { slug: string[] }[] {
   const result: { slug: string[] }[] = [];
-  const indexPath = join(CONTENT_DIR, "index.mdx");
-  try {
-    if (statSync(indexPath).isFile()) result.push({ slug: [] });
-  } catch {
-    // no index
-  }
-  const docsDir = join(CONTENT_DIR, "docs");
-  try {
-    if (!statSync(docsDir).isDirectory()) return result;
-  } catch {
-    return result;
-  }
   function collect(dir: string, prefix: string[]): void {
     const entries = readdirSync(dir, { withFileTypes: true });
     for (const e of entries) {
       const name = e.name.replace(/\.(md|mdx)$/, "");
       if (e.isFile() && /\.(md|mdx)$/i.test(e.name)) {
-        result.push({ slug: name === "index" ? prefix : [...prefix, name] });
+        const slug = name === "index" ? prefix : [...prefix, name];
+        result.push({ slug });
       } else if (e.isDirectory()) {
         collect(join(dir, e.name), [...prefix, e.name]);
       }
     }
   }
-  collect(docsDir, []);
+  collect(CONTENT_DIR, []);
   return result;
 }
 
