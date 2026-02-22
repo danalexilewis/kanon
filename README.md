@@ -16,6 +16,10 @@ A Cursor-based **ingest → sources → ontology** template for building a **kno
 
 ---
 
+See **SETUP.md** for forking, customizing the ontology, and Fumadocs options. See [milestone v1 reflection](docs/milestone-v1-reflection_2026-02-22.plan.md) for project status and decisions.
+
+---
+
 ## Where to look: `src/` is for you
 
 **Non-technical users:** Everything you need to add or edit lives under **`src/`**:
@@ -170,5 +174,3 @@ This repo includes a minimal **Fumadocs (Next.js)** app that serves the `content
 - `**.cursor/corrections.md**` — Global learnings/corrections the agent applies when writing to `content/`.
 - `**.cursor/next-step.md**` — Reminders (e.g., unprocessed ingest, stale docs; written by hooks or the agent).
 - `**.cursor/hooks.json**`, `**.cursor/hooks/after-file-edit.js**`, `**.cursor/hooks/revert-ingest-if-edited.js**`, `**.cursor/hooks/on-stop.js**` — Hooks for workflow automation and ingest-folder protection.
-
-See **SETUP.md** for forking, customizing the ontology, and Fumadocs options. See [milestone v1 reflection](docs/milestone-v1-reflection_2026-02-22.plan.md) for project status and decisions.
