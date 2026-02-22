@@ -67,27 +67,9 @@ If content under `content/` and `src/sources/` (or the ontology schema in `.curs
 
 ---
 
-## Protection modes checklist
+## Ingest folder protection
 
-Use these modes to keep the pipeline non-destructive and predictable.
-
-### Safe mode (guardrails first)
-
-- Activate: `npm run mode:safe`.
-- Hook behavior: edits in non-manifest `src/ingest/**` and risky `content/**` edits emit **stop-and-revert guidance** in `.cursor/next-step.md`.
-- Operator behavior: do not overwrite derived output manually; use skills (`ingest`, `update-docs`) to make changes.
-
-### Normal mode (day-to-day operation)
-
-- Activate: `npm run mode:normal`.
-- Hook behavior: warnings/reminders are advisory so normal workflows remain fast.
-- Operator behavior: run `ingest` for raw inputs, update `src/sources/`/ontology, then run `update-docs`.
-
-### Force mode (exception path only)
-
-- Activate: `npm run mode:force`.
-- Confirm risky edits by creating `.cursor/force-mode-confirmation.md` containing `CONFIRM FORCE MODE`.
-- Use only when normal mode cannot resolve drift; record forced actions in commit/PR notes.
+`src/ingest/` is append-only: add new files for new input; do not edit or delete existing ingest files (only `manifest.json` and `manifest.md` are updated by the **ingest** skill). If the agent edits any non-manifest file there, a hook **reverts those edits** and writes to `.cursor/next-step.md` telling the agent to make no further edits to that folder. No scripts or modes to configure.
 
 ---
 
@@ -109,29 +91,11 @@ When in doubt, restore from canonical truth instead of patching generated docs b
 
 ---
 
-## Automatic destructive-intent warnings
-
-The `afterFileEdit` hook now reads `.cursor/protection-mode.json` and writes mode-aware warnings to `.cursor/next-step.md` when:
-
-- a tool edits `src/ingest/**` files other than `src/ingest/manifest.json` and `src/ingest/manifest.md`,
-- a tool edits generated `content/**` while `src/sources/**` changes are still unapplied.
-
-In **safe mode**, warnings include explicit "stop and revert" actions. In **force mode**, risky edits require `.cursor/force-mode-confirmation.md` with `CONFIRM FORCE MODE`.
-
----
-
 ## How this works in Cursor
 
-1. Set the active mode (`safe`, `normal`, or `force`) via npm script.
-2. Keep working as usual in Cursor; hooks run after each file edit.
-3. Read `.cursor/next-step.md` for mode-aware warnings and recommended next skill.
-4. If warnings indicate source/derived drift, run `update-docs` instead of hand-editing generated `content/`**.
-
-```bash
-npm run mode:safe
-npm run mode:normal
-npm run mode:force
-```
+1. Hooks run after each file edit. If the agent edits `src/ingest/` (other than the manifest), a hook reverts those edits and writes to `.cursor/next-step.md`.
+2. Read `.cursor/next-step.md` for reminders (e.g. run **ingest** for new files, **update-docs** after source/ontology changes).
+3. If you see source/derived drift, run **update-docs** instead of hand-editing `content/`.
 
 ## Run the site
 
@@ -161,8 +125,6 @@ Open [http://localhost:3000](http://localhost:3000); the knowledge base is at [/
 - `**.cursor/rules/**` — Contains the new rule set (`folder-contract.mdc`, `ingest.mdc`, `sources.mdc`, `sources-corrections.mdc`, `references.mdc`, `media.mdc`, `ontology.mdc`, `update-docs.mdc`, `corrections-content.mdc`).
 - `**.cursor/corrections.md**` — Global learnings/corrections the agent applies when writing to `content/`.
 - `**.cursor/next-step.md**` — Reminders (e.g., unprocessed ingest, stale docs; written by hooks or the agent).
-- `**.cursor/protection-mode.json**` — Active protection mode (`safe`, `normal`, `force`) consumed by hooks.
-- `**.cursor/force-mode-confirmation.md**` — Optional explicit force confirmation token (`CONFIRM FORCE MODE`).
-- `**.cursor/hooks.json**`, `**.cursor/hooks/after-file-edit.js**`, `**.cursor/hooks/on-stop.js**` — Updated hooks for workflow automation.
+- `**.cursor/hooks.json**`, `**.cursor/hooks/after-file-edit.js**`, `**.cursor/hooks/revert-ingest-if-edited.js**`, `**.cursor/hooks/on-stop.js**` — Hooks for workflow automation and ingest-folder protection.
 
 See `**SETUP.md**` for forking, customizing the ontology, and Fumadocs options.

@@ -13,6 +13,7 @@ For document content corrections, see `src/sources/corrections.md` and `.cursor/
 ## Dev Preferences
 
 - **Cursor hooks**: When asked to create or add hooks, add the script under `.cursor/hooks/` and register it in `.cursor/hooks.json` (project-level hooks). Use the same pattern as existing hooks: Node scripts reading JSON from stdin, `workspace_roots` for repo root, commands like `node hooks/<name>.js`.
+- **Ingest protection**: No protection modes (safe/normal/force). Ingest is protected by `.cursor/hooks/revert-ingest-if-edited.js`: on afterFileEdit it aborts immediately unless the edited path is under `src/ingest/` and not manifest; then it reverts modified non-manifest files there and writes next-step.md. No scripts for users to run.
 
 ## Patterns That Work
 

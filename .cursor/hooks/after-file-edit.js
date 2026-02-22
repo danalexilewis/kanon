@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Cursor afterFileEdit hook: writes reminders and protection-mode warnings to
- * .cursor/next-step.md when sensitive files are edited.
+ * Cursor afterFileEdit hook: writes reminders to .cursor/next-step.md when
+ * relevant files are edited (e.g. run ingest, update-docs). Ingest edits
+ * are reverted by revert-ingest-if-edited.js.
  */
 
 const fs = require('fs');
@@ -13,29 +14,6 @@ function calculateFileHash(filePath) {
   const hashSum = crypto.createHash('sha256');
   hashSum.update(fileBuffer);
   return hashSum.digest('hex');
-}
-
-function getProtectionMode(root) {
-  const modePath = path.join(root, '.cursor', 'protection-mode.json');
-  if (!fs.existsSync(modePath)) return 'normal';
-
-  try {
-    const payload = JSON.parse(fs.readFileSync(modePath, 'utf8'));
-    const mode = `${payload.mode || ''}`.toLowerCase();
-    if (['safe', 'normal', 'force'].includes(mode)) return mode;
-  } catch {
-    return 'normal';
-  }
-
-  return 'normal';
-}
-
-function forceModeConfirmed(root) {
-  const confirmationPath = path.join(root, '.cursor', 'force-mode-confirmation.md');
-  if (!fs.existsSync(confirmationPath)) return false;
-
-  const value = fs.readFileSync(confirmationPath, 'utf8');
-  return value.includes('CONFIRM FORCE MODE');
 }
 
 function hasStaleSources(root) {
@@ -78,36 +56,12 @@ process.stdin.on('end', () => {
     const relativePath = path.relative(root, fullPath);
     const nextStepPath = path.join(root, '.cursor', 'next-step.md');
     const messages = [];
-    const mode = getProtectionMode(root);
-
-    messages.push(`Protection mode: **${mode}**.`);
-
     const isIngestNonManifest = relativePath.startsWith('src/ingest/') && !['src/ingest/manifest.md', 'src/ingest/manifest.json'].includes(relativePath);
     const isContentEdit = relativePath.startsWith('content/');
 
-    if (isIngestNonManifest) {
-      messages.push(
-        `⚠️ **Destructive intent warning:** edit detected in \`${relativePath}\`. Raw \`src/ingest/**\` files are append-only and should not be modified. Only \`src/ingest/manifest.json\` and \`src/ingest/manifest.md\` may be updated.`
-      );
-      if (mode === 'safe') {
-        messages.push(
-          `🛑 **Safe mode action:** revert this file edit and run **ingest** for new raw inputs instead of editing ingest files directly.`
-        );
-      }
-    }
-
     if (isContentEdit && hasStaleSources(root)) {
       messages.push(
-        `⚠️ **Destructive intent warning:** edit detected in \`${relativePath}\` while \`src/sources/**\` and/or the ontology schema (\`.cursor/rules/ontology.mdc\`) are ahead of \`content/**\`. Regenerate with **update-docs** instead of manual content edits.`
-      );
-      if (mode === 'safe') {
-        messages.push('🛑 **Safe mode action:** avoid manual edits in `content/**`; run **update-docs** to regenerate derived output.');
-      }
-    }
-
-    if (mode === 'force' && (isIngestNonManifest || isContentEdit) && !forceModeConfirmed(root)) {
-      messages.push(
-        '⛔ **Force mode is not confirmed:** create `.cursor/force-mode-confirmation.md` with `CONFIRM FORCE MODE` before continuing risky edits.'
+        `⚠️ **Warning:** edit in \`${relativePath}\` while \`src/sources/**\` and/or the ontology are ahead of \`content/**\`. Prefer **update-docs** to regenerate.`
       );
     }
 
@@ -125,7 +79,7 @@ process.stdin.on('end', () => {
       );
     }
 
-    if (messages.length > 1) {
+    if (messages.length > 0) {
       fs.mkdirSync(path.dirname(nextStepPath), { recursive: true });
       fs.writeFileSync(nextStepPath, `${messages.join('\n\n')}\n\n(Triggered by edit to: ${relativePath})\n`, 'utf8');
     }

@@ -8,10 +8,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "next lint",
-    "validate-links": "tsx scripts/validate-links.ts",
-    "mode:safe": "node .cursor/scripts/set-protection-mode.js safe",
-    "mode:normal": "node .cursor/scripts/set-protection-mode.js normal",
-    "mode:force": "node .cursor/scripts/set-protection-mode.js force"
+    "validate-links": "tsx scripts/validate-links.ts"
   },
   "dependencies": {
     "fumadocs-core": "^16",
