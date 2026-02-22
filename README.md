@@ -1,4 +1,6 @@
-# Kanon — Ingest → Sources → Ontology (Fumadocs) template
+# Kanon
+
+## Ingest → Sources → Ontology → Docs template
 
 **Kanon** is Swedish for the same word as English *canon* — and it has three meanings that fit this project:
 
