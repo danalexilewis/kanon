@@ -2,6 +2,10 @@
 
 ## Ingest → Sources → Ontology → Docs template
 
+A Cursor-based **ingest → sources → ontology** template for building a **knowledge system** (not code): immutable ingest, canonical sources, a user-defined ontology (schema), and **processed output written into a Fumadocs content folder** so the knowledge base can be served as a Fumadocs site.
+
+---
+
 **Kanon** is Swedish for the same word as English *canon* — and it has three meanings that fit this project:
 
 1. **A canon of work** — The body of accepted, authoritative sources. This template is built around canonical sources in `src/sources/` and a clear ontology.
@@ -9,10 +13,6 @@
 3. **Great** — Colloquially, *kanon* means “great” or “really good” (e.g. *Det var kanon!* = “That was great!”).
 
 **How to say it (Swedish accent):** Stress the first syllable: **KAH-nohn**. The *a* is an open “ah” (like in “father”), and the *o* is a long Swedish *o*, somewhat like the vowel in “go” but more rounded. So: *KAH-nohn*, not “kuh-NON” or “KAY-nun”.
-
----
-
-A Cursor-based **ingest → sources → ontology** template for building a **knowledge system** (not code): immutable ingest, canonical sources, a user-defined ontology (schema), and **processed output written into a Fumadocs content folder** so the knowledge base can be served as a Fumadocs site.
 
 ---
 
