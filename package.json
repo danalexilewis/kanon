@@ -4,33 +4,39 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "next lint",
+    "validate-links": "tsx scripts/validate-links.ts",
     "mode:safe": "node .cursor/scripts/set-protection-mode.js safe",
     "mode:normal": "node .cursor/scripts/set-protection-mode.js normal",
     "mode:force": "node .cursor/scripts/set-protection-mode.js force"
   },
   "dependencies": {
-    "fumadocs-core": "^15.0.0",
+    "fumadocs-core": "^16",
     "fumadocs-mdx": "^14.0.0",
-    "fumadocs-ui": "^9.0.0",
-    "next": "^15.0.0",
+    "fumadocs-twoslash": "^3.1.13",
+    "fumadocs-ui": "^16",
+    "next": "^16",
     "placeholder": "^1.2.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "twoslash": "^0.3.6"
   },
   "devDependencies": {
     "@serwist/turbopack": "^9.5.6",
+    "@tailwindcss/postcss": "^4.2.0",
     "@types/mdx": "^2.0.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.0",
     "esbuild": "^0.27.3",
+    "next-validate-link": "^1.6.4",
     "postcss": "^8.4.0",
     "serwist": "^9.5.6",
-    "tailwindcss": "^3.4.0",
+    "tailwindcss": "^4.2.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.0.0"
   },
   "overrides": {

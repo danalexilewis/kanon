@@ -4,6 +4,7 @@ import { withSerwist } from "@serwist/turbopack";
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  serverExternalPackages: ['typescript', 'twoslash'],
 };
 
 const withMDX = createMDX();

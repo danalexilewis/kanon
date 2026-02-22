@@ -1,6 +1,7 @@
 import { source } from '@/lib/source';
 import { DocsPage, DocsBody } from 'fumadocs-ui/page';
 import { notFound } from 'next/navigation';
+import { getMDXComponents } from '@/mdx-components';
 
 export default async function DocPage({
   params,
@@ -20,7 +21,7 @@ export default async function DocPage({
         {page.data.description && (
           <p className="text-fd-muted-foreground mb-6">{page.data.description}</p>
         )}
-        <MDX />
+        <MDX components={getMDXComponents()} />
       </DocsBody>
     </DocsPage>
   );

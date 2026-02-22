@@ -1,0 +1,10 @@
+---
+description: Consult the Fumadocs UI template when planning docs-site or Fumadocs features.
+alwaysApply: true
+---
+
+# Fumadocs Reference
+
+- **Reference repo**: The [Fumadocs UI template](https://github.com/fuma-nama/fumadocs-ui-template) (`fuma-nama/fumadocs-ui-template`) is the official, actively maintained Next.js + Fumadocs template. It defines current patterns for content source, layout, search, MDX config, and app structure.
+- **When planning features**: Whenever planning or designing a feature that touches the docs site, Fumadocs, `content/`, `app/docs/`, search, layout, MDX, or `source.config.ts`, **consult** this repo (and the local reference at `src/references/fumadocs-ui-template.md`) to align with up-to-date patterns and capabilities.
+- **How to consult**: Prefer the live GitHub repo for current structure and code; use `src/references/fumadocs-ui-template.md` for a quick index of key areas and links.
