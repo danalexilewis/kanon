@@ -28,6 +28,55 @@ Don’t touch the rest of the repo unless you’re changing how the system works
 
 ---
 
+## Getting started
+
+**Do this order:** Your ontology defines what your knowledge base *is*; ingest fills it. So:
+
+1. **Ontology first** — Define or refine the schema. Add reference material to `src/references/` (formal docs, notes, or transcripts — whatever best describes how you want your knowledge base structured; the template doesn't weight them). Run the **create-ontology** skill so the agent can build or update the schema in `.cursor/rules/ontology.mdc`.
+
+   Cursor prompt:
+
+   ```text
+   /create-ontology [add any other text instructions here]
+   ```
+
+2. **Then ingest** — Add raw material to `src/ingest/`, then run the **ingest** skill to normalize it into `src/sources/` and `public/media/`.
+
+   Cursor prompt:
+
+   ```text
+   /ingest
+   ```
+
+3. **Then docs** — Run the **update-docs** skill to generate `content/` from your sources and ontology, then run the site (see **Run the site** below).
+
+   Cursor prompt:
+
+   ```text
+   /update-docs
+   ```
+
+### Run the site
+
+**Option A — Ask an agent:** Paste this Cursor prompt so the agent installs deps and starts the dev server:
+
+```text
+Install dependencies (pnpm) and run the dev server for this repo. Use `pnpm run dev`. Tell me when the server is up and what URL to open.
+```
+
+**Option B — Do it yourself:**
+
+```bash
+pnpm install
+pnpm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000); the knowledge base is at [/docs](http://localhost:3000/docs).
+
+See **Workflow** below for the full step-by-step.
+
+---
+
 ## Three Stages, Five Key Folders (under `src/`)
 
 This template implements a three-stage knowledge pipeline. User-facing content lives under **`src/`**:
@@ -99,14 +148,7 @@ When in doubt, restore from canonical truth instead of patching generated docs b
 
 ## Run the site
 
-This repo includes a minimal **Fumadocs (Next.js)** app that serves the `content/` folder:
-
-```bash
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000); the knowledge base is at [/docs](http://localhost:3000/docs).
+This repo includes a minimal **Fumadocs (Next.js)** app that serves the `content/` folder. For install/run commands and a prompt you can give an agent, see **Getting started** above.
 
 ---
 
@@ -127,4 +169,4 @@ Open [http://localhost:3000](http://localhost:3000); the knowledge base is at [/
 - `**.cursor/next-step.md**` — Reminders (e.g., unprocessed ingest, stale docs; written by hooks or the agent).
 - `**.cursor/hooks.json**`, `**.cursor/hooks/after-file-edit.js**`, `**.cursor/hooks/revert-ingest-if-edited.js**`, `**.cursor/hooks/on-stop.js**` — Hooks for workflow automation and ingest-folder protection.
 
-See `**SETUP.md**` for forking, customizing the ontology, and Fumadocs options.
+See **SETUP.md** for forking, customizing the ontology, and Fumadocs options. See [milestone v1 reflection](docs/milestone-v1-reflection_2026-02-22.plan.md) for project status and decisions.

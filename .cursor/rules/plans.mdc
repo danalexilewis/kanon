@@ -1,9 +1,9 @@
 ---
-description: When creating or saving plans, keep a copy in ./plan for historical reference
+description: When creating or saving plans, keep a copy in ./plans for historical reference
 alwaysApply: true
 ---
 
 # Plans
 
-- **Historical copy:** Whenever you create or finalize a plan (e.g. via the plan tool or a plan document), also add a copy to the **`./plan/`** folder for historical reference.
+- **Historical copy:** Whenever you create or finalize a plan (e.g. via the plan tool or a plan document), also add a copy to the **`./plans/`** folder for historical reference.
 - Use a stable, descriptive filename (e.g. `plan-name_short-id.plan.md` or `plan-name_YYYY-MM-DD.plan.md`) so past plans are easy to find and don’t overwrite each other.
