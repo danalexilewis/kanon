@@ -67,7 +67,7 @@ Reference: [Serwist Turbopack quick guide](https://serwist.pages.dev/docs/next/t
 ## 6. Web app manifest and icons
 
 - **Use Next.js built-in:** `app/manifest.ts` (or `app/manifest.json`) returning name, short_name, description, start_url, display, theme_color, background_color, icons (at least 192 and 512). Next will serve it at `/manifest.webmanifest` (or similar).
-- **Icons:** add `public/icon-192.png` and `public/icon-512.png` (or document that they must be added). Reference them in the manifest.
+- **Icons:** when stubbing placeholder icons, use the `placeholder` package (`pnpm add placeholder`). Add real icon assets to `public/` and reference them in the manifest when ready.
 
 ## 7. Root layout: manifest link, theme-color, SerwistProvider
 
@@ -100,7 +100,7 @@ Reference: [Serwist Turbopack quick guide](https://serwist.pages.dev/docs/next/t
 | Add | `app/sw.ts` — Serwist worker with `defaultCache`, `__SW_MANIFEST`, document fallback. |
 | Add | Offline page (e.g. `app/~offline/page.tsx` or equivalent) and list in `additionalPrecacheEntries`. |
 | Add | `app/manifest.ts` or `app/manifest.json` — PWA metadata and icons. |
-| Add | `public/icon-192.png`, `public/icon-512.png` (or document). |
+| Optional | Add icon assets to `public/` when needed (use `placeholder` package for stubs; see project rules). |
 | Add | `app/serwist.ts` — client re-export of `SerwistProvider` from `@serwist/turbopack/react`. |
 | Edit | [app/layout.tsx](app/layout.tsx) — metadata, viewport, wrap with `SerwistProvider` (swUrl="/serwist/sw.js"). |
 | Optional | [tsconfig.json](tsconfig.json) — Serwist typings and `webworker` lib. [.gitignore](.gitignore) — `public/sw*`. |

@@ -1,0 +1,15 @@
+---
+description: Use the placeholder package for stubbing placeholder icons
+alwaysApply: true
+---
+
+# Placeholder icons
+
+- **Do not** add made-up or fake icon files (e.g. `icon-192.png`, `icon-512.png`) that don't exist in the repo.
+- When you need to stub out placeholder icons, use the **`placeholder`** package:
+
+  ```bash
+  pnpm add placeholder
+  ```
+
+  Use it to generate or reference placeholder assets; add real icon files when you have them.
