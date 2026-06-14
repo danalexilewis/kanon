@@ -1,6 +1,6 @@
 # Kanon
 
-## Knowledge system template
+## DIY Knowledge Management Framework template
 
 A Cursor-driven template for building a **knowledge system** (not a code project): immutable ingest, canonical sources, a user-defined ontology (schema), and **processed output in `content/`** served as a Fumadocs site.
 
