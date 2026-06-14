@@ -23,9 +23,6 @@ importers:
       next:
         specifier: ^16
         version: 16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      placeholder:
-        specifier: ^1.2.3
-        version: 1.2.3
       react:
         specifier: ^19.0.0
         version: 19.2.4
@@ -63,6 +60,9 @@ importers:
       esbuild:
         specifier: ^0.27.3
         version: 0.27.3
+      husky:
+        specifier: ^9.1.7
+        version: 9.1.7
       next-validate-link:
         specifier: ^1.6.4
         version: 1.6.4
@@ -1726,6 +1726,11 @@ packages:
   html-void-elements@3.0.0:
     resolution: {integrity: sha512-bEqo66MRXsUGxWHV5IP0PUiAWwoEjba4VCzg0LjFJBpchPaTfyfCKTG6bc5F8ucKec3q5y6qOdGyYTSBEvhCrg==}
 
+  husky@9.1.7:
+    resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   idb@8.0.3:
     resolution: {integrity: sha512-LtwtVyVYO5BqRvcsKuB2iUMnHwPVByPCXFXOpuU96IZPPoPN6xjOGxZQ74pgSVVLQWtUOYgyeL4GE98BY5D3wg==}
 
@@ -2190,9 +2195,6 @@ packages:
     resolution: {integrity: sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==}
     engines: {node: '>=12'}
 
-  placeholder@1.2.3:
-    resolution: {integrity: sha512-Gawyrv/TEurS5nQ+VRztzMguX0f8pVQ6e1emFQE2VA3lTydb8LKB3tgHXgjezgydP755FP5XM4z2EY9eFYAPmA==}
-
   player.style@0.3.1:
     resolution: {integrity: sha512-z/T8hJGaTkHT9vdXgWdOgF37eB1FV7/j52VXQZ2lgEhpru9oT8TaUWIxp6GoxTnhPBM4X6nSbpkAHrT7UTjUKg==}
 
@@ -2280,10 +2282,6 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
-
-  react@18.3.1:
-    resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
-    engines: {node: '>=0.10.0'}
 
   react@19.2.4:
     resolution: {integrity: sha512-9nfp2hYpCwOjAN+8TZFGhtWEwgvWHXqESH8qT89AT/lWklpLON22Lc8pEtnpsZz7VmawabSU0gCjnj8aC0euHQ==}
@@ -4232,6 +4230,8 @@ snapshots:
 
   html-void-elements@3.0.0: {}
 
+  husky@9.1.7: {}
+
   idb@8.0.3: {}
 
   image-size@2.0.2: {}
@@ -4926,10 +4926,6 @@ snapshots:
 
   picomatch@4.0.3: {}
 
-  placeholder@1.2.3:
-    dependencies:
-      react: 18.3.1
-
   player.style@0.3.1(react@19.2.4):
     dependencies:
       media-chrome: 4.16.1(react@19.2.4)
@@ -5028,10 +5024,6 @@ snapshots:
       tslib: 2.8.1
     optionalDependencies:
       '@types/react': 19.2.14
-
-  react@18.3.1:
-    dependencies:
-      loose-envify: 1.4.0
 
   react@19.2.4: {}
 

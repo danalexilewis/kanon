@@ -1,15 +1,17 @@
 ---
 id: <generated-id>
-source_type: Organization
-weight: 1.0
-title: <Organization Name>
+source_type: Meeting
+weight: 0.8
+title: <Meeting Topic>
 created_at: <ISO8601-timestamp>
 ingest_paths: []
 ingest_hashes: []
-website: 
+date: <ISO8601-datetime>
+participants: []
+topic:
 ---
 
-# <Organization Name>
+# <Meeting Topic>
 
 ## Overview
 
@@ -21,4 +23,4 @@ website:
 
 ## Details
 
-(Generated content about the organization.)
+(Generated content about the meeting.)

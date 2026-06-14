@@ -1,7 +1,7 @@
 # Kanon v1 / beta milestone reflection (deepened)
 
 **Date:** 2026-02-22  
-**Purpose:** Sense-check where the project has landed, clarify *why it exists*, and add forward-facing intelligence on where it could go next — especially for **non-technical users** building ontology-based knowledge bases in **real tools** (Cursor + Git + Markdown).
+**Purpose:** Sense-check where the project has landed, clarify _why it exists_, and add forward-facing intelligence on where it could go next — especially for **non-technical users** building ontology-based knowledge bases in **real tools** (Cursor + Git + Markdown).
 
 ---
 
@@ -21,7 +21,7 @@ Kanon is a practical answer to the thing your team (and most teams) keep running
 - **Prompt engineering** is mostly “how you ask” in one interaction.
 - **Context engineering** is “what the model can reliably see” across time: curated sources, stable rules/contracts, retrieval boundaries, and provenance.
 
-Kanon is intentionally designed as a *context engineering template*: it turns scattered artifacts (docs, transcripts, links, media) into a durable, inspectable context system (sources + ontology + derived site) that you can reuse without copy/paste debt.
+Kanon is intentionally designed as a _context engineering template_: it turns scattered artifacts (docs, transcripts, links, media) into a durable, inspectable context system (sources + ontology + derived site) that you can reuse without copy/paste debt.
 
 ---
 
@@ -39,7 +39,7 @@ An Inspiral retreat experience (Joshua Vile / “Code with JV”) reinforced an 
 
 Needs:
 
-- A durable place to put *their* sources (docs, transcripts, notes) without copy/paste debt.
+- A durable place to put _their_ sources (docs, transcripts, notes) without copy/paste debt.
 - A way to ask better questions because the context is **structured + retrievable**.
 - A workflow that survives bad connectivity and doesn’t depend on a vendor UI.
 
@@ -53,7 +53,7 @@ Your examples (Frederick; Manuel / New Work by Design and GPS/infinite games) ar
 
 ### 2.3 Tertiary persona: hobby knowledge bases (e.g., complex TTRPG campaigns)
 
-Invisible Sun is a great example of a domain that effectively *ships an ontology* (the books define the world). With a light ontology + ingest, you can build:
+Invisible Sun is a great example of a domain that effectively _ships an ontology_ (the books define the world). With a light ontology + ingest, you can build:
 
 - NPC/faction/location pages (entities)
 - session log / timeline (events)
@@ -65,14 +65,14 @@ Constraint to embrace: don’t treat messy group audio as a stats engine. Use th
 
 ## 3. Where we’ve gotten to (v1 / beta)
 
-| Area | Status |
-|------|--------|
-| **Pipeline** | Ingest → sources (documents/chats/transcripts) → `content/` via update-docs; references → create-ontology → `.cursor/rules/ontology.mdc`. |
-| **Media** | Images/audio URLs → download to `public/media/` with `meta.json`; video URLs kept; sources and content reference correctly; ImageZoom, AudioPlayer, VideoPlayer (offline-aware). |
-| **Offline** | Serwist PWA; offline badge; fallback to home when doc not cached; build uses Webpack for Serwist compatibility (see plans/README). |
-| **Protection** | Ingest append-only enforced by hook (revert + next-step); no safe/normal/force modes. |
-| **Skills** | ingest, ingest-force, create-ontology, update-docs (+ create-hook); playbooks and rules aligned. |
-| **Docs** | README + SETUP describe pipeline, folders, workflow, restore playbook; plans/ has implementation plans and dev notes; docs/ has reflections and design docs. |
+| Area           | Status                                                                                                                                                                           |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pipeline**   | Ingest → sources (documents/chats/transcripts) → `content/` via update-docs; references → create-ontology → `.cursor/rules/ontology.mdc`.                                        |
+| **Media**      | Images/audio URLs → download to `public/media/` with `meta.json`; video URLs kept; sources and content reference correctly; ImageZoom, AudioPlayer, VideoPlayer (offline-aware). |
+| **Offline**    | Serwist PWA; offline badge; fallback to home when doc not cached; build uses Webpack for Serwist compatibility (see SETUP.md).                                                   |
+| **Protection** | Ingest append-only enforced by hook (revert + next-step); no safe/normal/force modes.                                                                                            |
+| **Skills**     | ingest, ingest-force, create-ontology, update-docs (+ create-hook); playbooks and rules aligned.                                                                                 |
+| **Docs**       | README + SETUP describe pipeline, folders, workflow, restore playbook; `.cursor/plans/` has implementation plans and dev notes; `docs/` has reflections and design docs.         |
 
 So: the “brief” is met — offline caching, rich ingestion (PDF/docx/audio/media), normalized sources, ontology-driven transform. This is a coherent v1.
 
@@ -143,7 +143,7 @@ The repo doesn’t need to “win UX” against vertical products in v1; it need
 
 ### 7.2 README review
 
-- Consider one short line on **why ontology first**: e.g. “Your ontology defines what your knowledge base *is*; ingest fills it.”
+- Consider one short line on **why ontology first**: e.g. “Your ontology defines what your knowledge base _is_; ingest fills it.”
 - Link to GETTING-STARTED from README if we add it.
 
 ### 7.3 Model guidance for ontology

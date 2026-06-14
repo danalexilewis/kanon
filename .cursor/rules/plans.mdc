@@ -1,9 +1,11 @@
 ---
-description: When creating or saving plans, keep a copy in ./plans for historical reference
-alwaysApply: true
+description: Standards for creating and storing plan documents in .cursor/plans/. Use when creating, updating, or finalizing a plan.
+alwaysApply: false
 ---
 
 # Plans
 
-- **Historical copy:** Whenever you create or finalize a plan (e.g. via the plan tool or a plan document), also add a copy to the **`./plans/`** folder for historical reference.
+Plans live in **`.cursor/plans/`** — part of the Cursor agent workflow, not published site content.
+
+- **Historical copy:** Whenever you create or finalize a plan (e.g. via the plan tool or a plan document), also add a copy to **`.cursor/plans/`** for historical reference.
 - Use a stable, descriptive filename (e.g. `plan-name_short-id.plan.md` or `plan-name_YYYY-MM-DD.plan.md`) so past plans are easy to find and don’t overwrite each other.

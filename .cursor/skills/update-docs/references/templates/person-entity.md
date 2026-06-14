@@ -6,8 +6,8 @@ title: <Person Name>
 created_at: <ISO8601-timestamp>
 ingest_paths: []
 ingest_hashes: []
-email: 
-organization: 
+email:
+organization:
 ---
 
 # <Person Name>

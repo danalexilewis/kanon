@@ -11,6 +11,7 @@ todos:
   - id: remove-offline-route
     content: Remove app/(routes)/~offline/ page and route
 ---
+
 # Offline: badge instead of full-page message
 
 ## Goal
@@ -45,17 +46,17 @@ todos:
 
 ### 4. Remove the dedicated offline page
 
-- **Delete** the route and page at [app/(routes)/~offline/page.tsx](app/(routes)/~offline/page.tsx) (and remove the directory if nothing else lives there).
+- **Delete** the route and page at [app/(routes)/~offline/page.tsx](<app/(routes)/~offline/page.tsx>) (and remove the directory if nothing else lives there).
 - No other references to `/~offline` should remain after the SW and Serwist route updates above.
 
 ## Summary
 
-| What | Where |
-|------|--------|
-| Fallback URL: `/~offline` → `"/"` | [app/sw.ts](app/sw.ts) |
-| Remove `/~offline` from precache; ensure `"/"` precached | [app/serwist/[path]/route.ts](app/serwist/[path]/route.ts) |
-| Add OfflineBadge client component (top-right, subtle) | New file, e.g. `app/offline-badge.tsx` |
-| Mount OfflineBadge in root layout | [app/layout.tsx](app/layout.tsx) |
-| Remove `~offline` page and route | Delete [app/(routes)/~offline/page.tsx](app/(routes)/~offline/page.tsx) |
+| What                                                     | Where                                                                     |
+| -------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Fallback URL: `/~offline` → `"/"`                        | [app/sw.ts](app/sw.ts)                                                    |
+| Remove `/~offline` from precache; ensure `"/"` precached | [app/serwist/[path]/route.ts](app/serwist/[path]/route.ts)                |
+| Add OfflineBadge client component (top-right, subtle)    | New file, e.g. `app/offline-badge.tsx`                                    |
+| Mount OfflineBadge in root layout                        | [app/layout.tsx](app/layout.tsx)                                          |
+| Remove `~offline` page and route                         | Delete [app/(routes)/~offline/page.tsx](<app/(routes)/~offline/page.tsx>) |
 
 Result: when the user goes offline they see the normal app with a small "(offline)" badge in the top right; if they hit a document that isn't cached, they get the home page with the same badge instead of a full-page message.

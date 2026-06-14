@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+STAGED_MD=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(md|mdx)$' || true)
+if [ -n "$STAGED_MD" ]; then
+  echo "$STAGED_MD" | xargs pnpm exec prettier --write
+  echo "$STAGED_MD" | xargs git add
+fi
+
+pnpm run validate-links

@@ -1,7 +1,7 @@
 ---
 description: Rules for managing the top-level media/ library.
 globs: public/media/**
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Media Library Rules
@@ -13,7 +13,7 @@ These rules define the structure and usage of the `public/media/` directory, whi
   - One or more binary assets (e.g., `asset.jpg`, `video.mp4`).
   - A **`meta.json`** file with relevant metadata (required). Suggested fields: `origin`, `provenance`, `description`, `source_url` (for downloaded URLs), `capture_date` (ISO8601), `rights`, `relevant_entities`, `relevant_events`.
   - Optionally a `meta.md` file (Markdown with frontmatter) for longer human-readable description, provenance, and links to `src/sources/` IDs or `content/` pages.
-- **Ingest and image URLs**: When the ingest (or ingest-force) skill encounters a URL that points to an image asset in raw ingest content, the agent must download that image and place it in a new subfolder under `public/media/` (using the folder naming convention above), add the binary file, and create `meta.json` (and optionally `meta.md`). The produced source in `src/sources/` must reference the media as a link (repo-root path, e.g. `public/media/YYYY-MM-DD_short_descriptive_name/asset.jpg`).
+- **Ingest and image URLs**: When the ingest skill encounters a URL that points to an image asset in raw ingest content, the agent must download that image and place it in a new subfolder under `public/media/` (using the folder naming convention above), add the binary file, and create `meta.json` (and optionally `meta.md`). The produced source in `src/sources/` must reference the media as a link (repo-root path, e.g. `public/media/YYYY-MM-DD_short_descriptive_name/asset.jpg`).
 - **Audio assets**: Download to `public/media/YYYY-MM-DD_short_descriptive_name/`. Reference in sources; render with `<AudioPlayer>` in content MDX.
 - **Video URLs (external)**: Do NOT download. Keep the URL as-is in the source. Render with `<VideoPlayer>` in content MDX.
 - **Read-Only Binary Assets**: While the agent can add new media folders and their metadata files, existing binary media assets within `src/media/` should generally be treated as read-only. Avoid modifying or deleting them unless explicitly instructed.

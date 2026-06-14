@@ -1,10 +1,37 @@
 ---
-description: Consult the Fumadocs UI template when planning docs-site or Fumadocs features.
-alwaysApply: true
+description: Fumadocs work — after a correction or failed attempt, consult the latest docs before retrying.
+globs: source.config.ts, next.config.mjs, app/**, lib/source.ts, content/**
+alwaysApply: false
 ---
 
 # Fumadocs Reference
 
-- **Reference repo**: The [Fumadocs UI template](https://github.com/fuma-nama/fumadocs-ui-template) (`fuma-nama/fumadocs-ui-template`) is the official, actively maintained Next.js + Fumadocs template. It defines current patterns for content source, layout, search, MDX config, and app structure.
-- **When planning features**: Whenever planning or designing a feature that touches the docs site, Fumadocs, `content/`, `app/docs/`, search, layout, MDX, or `source.config.ts`, **consult** this repo (and the local reference at `src/references/fumadocs-ui-template.md`) to align with up-to-date patterns and capabilities.
-- **How to consult**: Prefer the live GitHub repo for current structure and code; use `src/references/fumadocs-ui-template.md` for a quick index of key areas and links.
+This repo uses **Fumadocs 16** (fumadocs-ui, fumadocs-core) and **fumadocs-mdx 14**.
+
+## When to consult docs
+
+- **First attempt** — proceed normally from repo patterns and `AGENTS.md`.
+- **After friction** — the moment a Fumadocs change is corrected, errors, or your plan is not working: **STOP**. Before the next attempt you **MUST** consult the latest Fumadocs docs. Do not guess or iterate blindly.
+
+## How to retrieve docs
+
+Use the latest content only. Prefer indexed docs; fall back to a fresh fetch.
+
+1. **Cursor indexed docs** — search `@Docs` / semantic search for `fumadocs.dev` if available.
+2. **Reference repo** — [Fumadocs UI template](https://github.com/fuma-nama/fumadocs-ui-template) and local index at `src/references/fumadocs-ui-template.md`.
+3. **Fresh fetch** — when indexed docs are unavailable or insufficient:
+
+   ```bash
+   curl -sL https://www.fumadocs.dev/llms-full.txt -o /tmp/fumadocs-llms-full.txt
+   rg -n "^# .*<topic>" /tmp/fumadocs-llms-full.txt
+   rm -f /tmp/fumadocs-llms-full.txt
+   ```
+
+   Grep for the section heading, read only that section. Never commit the dump.
+
+## Repo gotchas (verify against docs)
+
+- Root provider: `fumadocs-ui/provider/next` (not `fumadocs-ui/provider`).
+- Docs layout: `fumadocs-ui/layouts/docs` (not `fumadocs-ui/layout`).
+- Content source: `defineDocs({ dir: 'content' })` in `source.config.ts`; navigation from `content/meta.json`.
+- Production build uses Webpack (`next build --webpack`) for Serwist compatibility.

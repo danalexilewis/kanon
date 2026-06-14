@@ -1,9 +1,0 @@
----
-description: Rules for the src/references/ directory (read-only reference materials).
-globs: src/references/**
-alwaysApply: true
----
-
-# References Rules
-
-- **`src/references/`**: Non-user-created reference materials (e.g., PDFs, external docs). Read-only. The agent must **not edit or delete** any file in this directory. Used as context when building the ontology via the `create-ontology` skill.

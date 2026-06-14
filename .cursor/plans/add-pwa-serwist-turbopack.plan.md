@@ -38,9 +38,11 @@ import { withSerwist } from "@serwist/turbopack";
 import { createMDX } from "fumadocs-mdx/next";
 
 const withMDX = createMDX();
-export default withSerwist(withMDX({
-  reactStrictMode: true,
-}));
+export default withSerwist(
+  withMDX({
+    reactStrictMode: true,
+  }),
+);
 ```
 
 No `output: 'export'` in this approach — see “Static export” below.
@@ -93,16 +95,16 @@ Reference: [Serwist Turbopack quick guide](https://serwist.pages.dev/docs/next/t
 
 ## Files to add or touch
 
-| Action | File |
-|--------|------|
-| Edit | [next.config.mjs](next.config.mjs) — add `withSerwist` from `@serwist/turbopack`, compose with `withMDX`. |
-| Add | `app/serwist/[path]/route.ts` — `createSerwistRoute` with `swSrc: "app/sw.ts"`, offline fallback entry. |
-| Add | `app/sw.ts` — Serwist worker with `defaultCache`, `__SW_MANIFEST`, document fallback. |
-| Add | Offline page (e.g. `app/~offline/page.tsx` or equivalent) and list in `additionalPrecacheEntries`. |
-| Add | `app/manifest.ts` or `app/manifest.json` — PWA metadata and icons. |
-| Optional | Add icon assets to `public/` when needed (use `placeholder` package for stubs; see project rules). |
-| Add | `app/serwist.ts` — client re-export of `SerwistProvider` from `@serwist/turbopack/react`. |
-| Edit | [app/layout.tsx](app/layout.tsx) — metadata, viewport, wrap with `SerwistProvider` (swUrl="/serwist/sw.js"). |
+| Action   | File                                                                                                           |
+| -------- | -------------------------------------------------------------------------------------------------------------- |
+| Edit     | [next.config.mjs](next.config.mjs) — add `withSerwist` from `@serwist/turbopack`, compose with `withMDX`.      |
+| Add      | `app/serwist/[path]/route.ts` — `createSerwistRoute` with `swSrc: "app/sw.ts"`, offline fallback entry.        |
+| Add      | `app/sw.ts` — Serwist worker with `defaultCache`, `__SW_MANIFEST`, document fallback.                          |
+| Add      | Offline page (e.g. `app/~offline/page.tsx` or equivalent) and list in `additionalPrecacheEntries`.             |
+| Add      | `app/manifest.ts` or `app/manifest.json` — PWA metadata and icons.                                             |
+| Optional | Add icon assets to `public/` when needed (use `placeholder` package for stubs; see project rules).             |
+| Add      | `app/serwist.ts` — client re-export of `SerwistProvider` from `@serwist/turbopack/react`.                      |
+| Edit     | [app/layout.tsx](app/layout.tsx) — metadata, viewport, wrap with `SerwistProvider` (swUrl="/serwist/sw.js").   |
 | Optional | [tsconfig.json](tsconfig.json) — Serwist typings and `webworker` lib. [.gitignore](.gitignore) — `public/sw*`. |
 
 ## Flow summary

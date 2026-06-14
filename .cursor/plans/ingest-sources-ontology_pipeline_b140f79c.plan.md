@@ -34,15 +34,15 @@ isProject: false
 
 We’ll evolve the current v1 layout (raw `ingest/` → processed `content/`) into a two-stage system:
 
-- `**ingest/**`: raw dropbox for *any* file type (append-only / immutable). Tracks ingestion status via a manifest.
-- `**sources/*`*: the canonical, normalized “user-created” source corpus (Markdown only, with frontmatter). Organized into:
+- `**ingest/**`: raw dropbox for _any_ file type (append-only / immutable). Tracks ingestion status via a manifest.
+- `**sources/*`\*: the canonical, normalized “user-created” source corpus (Markdown only, with frontmatter). Organized into:
   - `sources/documents/`
   - `sources/chats/`
   - `sources/transcripts/`
   - `sources/media/` (Markdown metadata/notes about media)
 - `**references/**`: non-user reference corpus (often PDFs) used to build/maintain the ontology.
-- `**media/**`: shared, top-level media library (folders with meaningful names + per-item meta file) that *any* Markdown in `sources/` or `content/` can link to.
-- `**ontology/*`*: schema only (no canonical entity data). Adds a single `ontology/ontology.md` as the “contract” the system follows.
+- `**media/**`: shared, top-level media library (folders with meaningful names + per-item meta file) that _any_ Markdown in `sources/` or `content/` can link to.
+- `**ontology/*`\*: schema only (no canonical entity data). Adds a single `ontology/ontology.md` as the “contract” the system follows.
 - `**content/**`: Fumadocs output (derived/published knowledge base). Still served by the existing Next/Fumadocs app (`source.config.ts`, `app/docs`, etc.).
 
 Because you chose **“commit everything”**, all of the above live in git; the rules will enforce immutability where desired (especially `ingest/` and `references/`).
@@ -58,8 +58,6 @@ flowchart LR
   ontology -->|constraints| sources
   ontology -->|constraints| content
 ```
-
-
 
 ## File formats and conventions
 
@@ -83,7 +81,7 @@ Create a single frontmatter contract used across `sources/documents|chats|transc
   - `people`, `orgs`, `tags`, `language`, `confidence`, `needs_review`
   - `media_refs`: list of `media/...` paths when relevant
 
-### `media/`** layout (your requested “top-level media folder”)
+### `media/`\*\* layout (your requested “top-level media folder”)
 
 - **Naming**:
   - Folder per media item: `media/YYYY-MM-DD_short_descriptive_name/`
@@ -104,12 +102,12 @@ Create a single frontmatter contract used across `sources/documents|chats|transc
 
 ### Manifests (idempotency + re-ingest)
 
-- `**ingest/manifest.json` (canonical)**: machine-readable status per ingest file
+- `**ingest/manifest.json` (canonical)\*\*: machine-readable status per ingest file
   - path, size, modified time, hash
   - ingestion status: `new | ingested | error`
   - produced outputs: `sources/*` IDs, `media/*` paths
   - timestamps and any error messages
-- `**ingest/manifest.md` (human view)**: concise table generated/updated from the JSON (keeps your current UX, see existing `ingest/manifest.md`).
+- `**ingest/manifest.md` (human view)\*\*: concise table generated/updated from the JSON (keeps your current UX, see existing `ingest/manifest.md`).
 - `**content/manifest.json` (optional but recommended)**: tracks which `sources/`** hashes have been applied to `content/**` so hooks can detect “sources changed but docs not updated”.
 
 ## “Skills” (repeatable playbooks)
@@ -126,19 +124,19 @@ We’ll implement “skills” as repo-native playbooks (prompt/runbooks) plus C
 
 We’ll update/replace the current rules in `.cursor/rules/` (currently: `ingest.mdc`, `resources.mdc`, `ontology.mdc`, `corrections.mdc`). Proposed rule set:
 
-- `**folder-contract.mdc` (alwaysApply: true)**
+- `**folder-contract.mdc` (alwaysApply: true)\*\*
   - Declares the pipeline phases and allowed write targets per phase.
   - Makes “don’t write to ingest/references” and “docs live in content” unambiguous.
-- `**ingest.mdc`** (update existing)
+- `**ingest.mdc`\*\* (update existing)
   - `ingest/**` is append-only; agent never edits files except manifests.
   - Output of ingest skill is **only** `sources/`**, `media/**`, and manifests.
 - `**sources.mdc**`
   - Enforces Markdown-only, frontmatter schema, folder placement rules, weights.
   - Requires provenance pointers back to ingest + hashes.
-- `**sources-corrections.mdc` (alwaysApply: true for ingest→sources work)**
+- `**sources-corrections.mdc` (alwaysApply: true for ingest→sources work)\*\*
   - Defines `sources/corrections.md` as the correction store applied during ingestion.
   - Examples: consistent speaker names, common transcription misspellings, canonical org names.
-- `**references.mdc`**
+- `**references.mdc`\*\*
   - Replaces `resources.mdc`; treat `references/**` as read-only.
   - For backward compatibility, we can also apply the same rule to `resources/**` and optionally migrate folder names.
 - `**media.mdc**`
@@ -152,7 +150,7 @@ We’ll update/replace the current rules in `.cursor/rules/` (currently: `ingest
   - Requires provenance: `content/**` files must cite `sources/**` IDs (not raw ingest).
   - Describes how to preserve manual edits (protected sections) when regenerating.
 - `**corrections-content.mdc**` (rename/split from current `corrections.mdc`)
-  - Keep `.cursor/corrections.md` as the *global* “you corrected me” store applied when writing to `content/*`*.
+  - Keep `.cursor/corrections.md` as the _global_ “you corrected me” store applied when writing to `content/*`\*.
   - Clarifies difference vs `sources/corrections.md` (ingest normalization).
 
 ## Hooks (make the workflow feel automatic)
@@ -186,4 +184,3 @@ We’ll extend the existing Cursor hooks (see `.cursor/hooks.json`, `.cursor/hoo
   - Use protected sections in `sources/`** and `content/**` (e.g. “Notes” blocks) that regeneration never touches.
 - **Docs structure**:
   - `ontology/ontology.md` defines what folders exist under `content/` (e.g. keep `docs/`, `entities/`, `events/`, add `stats/`, `narratives/`, etc.) and how update-docs populates them.
-

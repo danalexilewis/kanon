@@ -1,7 +1,7 @@
 ---
 description: Rules for updating Fumadocs content under content/.
 globs: content/**
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Update Docs Rules

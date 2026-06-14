@@ -1,15 +1,14 @@
 ---
-description: Learnings and corrections store for ingest -> sources transformation.
-globs: src/sources/corrections.md
-alwaysApply: true
+description: Normalization rules for ingest-to-sources transformation. Read src/sources/corrections.md before writing to src/sources/.
+alwaysApply: false
 ---
 
 # Sources Corrections Rules
 
-This rule defines `src/sources/corrections.md` as the store for normalization and correction rules applied during the `ingest` and `ingest-force` skill execution, specifically when transforming raw ingest files into `src/sources/` Markdown.
+This rule defines `src/sources/corrections.md` as the store for normalization and correction rules applied during the `ingest` skill execution, specifically when transforming raw ingest files into `src/sources/` Markdown.
 
 - **Store**: Maintain a store of learnings and corrections in `src/sources/corrections.md`. When the agent is corrected on how raw text from `src/ingest/` should be normalized or represented in `src/sources/`, add a short, actionable entry here.
 - **Application**: The agent must read `src/sources/corrections.md` and apply these rules before writing any content to `src/sources/`.
 - **Format**: Entries should be concise: “Do X” / “Don’t Y” / “When Z, do W”. Examples include consistent speaker names, common transcription misspellings (e.g., `mispeled -> misspelled`), canonical organization names, or preferred terminology for entities.
 
-*(Example entry: `Always spell 'Kanon' with a capital K`)*
+_(Example entry: `Always spell 'Kanon' with a capital K`)_

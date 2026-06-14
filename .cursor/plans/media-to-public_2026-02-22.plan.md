@@ -97,7 +97,10 @@ The always-applied workspace rules in the system prompt reference `src/media/` e
 **Usage in MDX:**
 
 ```mdx
-<AudioPlayer src="/media/2025-06-01_interview/recording.mp3" title="Interview with Alice" />
+<AudioPlayer
+  src="/media/2025-06-01_interview/recording.mp3"
+  title="Interview with Alice"
+/>
 ```
 
 ---
@@ -121,7 +124,10 @@ The always-applied workspace rules in the system prompt reference `src/media/` e
 **Usage in MDX:**
 
 ```mdx
-<VideoPlayer url="https://www.youtube.com/watch?v=abc123" title="Project demo" />
+<VideoPlayer
+  url="https://www.youtube.com/watch?v=abc123"
+  title="Project demo"
+/>
 ```
 
 ---

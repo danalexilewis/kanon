@@ -7,7 +7,7 @@
  * - Fix common typos in internal links
  * - Update outdated external URLs
  *
- * Run with: tsx scripts/fix-links.ts [--dry-run] [--pattern="content/**/*.mdx"]
+ * Run with: tsx scripts/fix-links.ts [--dry-run] [--pattern=content glob]
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -31,9 +31,11 @@ const LINK_FIXES: Record<string, string> = {
 };
 
 /** Extract all markdown links from content */
-function extractLinks(content: string): Array<{ match: string; url: string; line: number }> {
+function extractLinks(
+  content: string,
+): Array<{ match: string; url: string; line: number }> {
   const links: Array<{ match: string; url: string; line: number }> = [];
-  const lines = content.split('\n');
+  const lines = content.split("\n");
 
   lines.forEach((line, index) => {
     // Match markdown links [text](url)
@@ -42,17 +44,19 @@ function extractLinks(content: string): Array<{ match: string; url: string; line
       links.push({
         match: match[0],
         url: match[2],
-        line: index + 1
+        line: index + 1,
       });
     }
 
     // Match component links like <Card href="url">
-    const componentLinks = line.matchAll(/<\w+[^>]*href=["']([^"']+)["'][^>]*>/g);
+    const componentLinks = line.matchAll(
+      /<\w+[^>]*href=["']([^"']+)["'][^>]*>/g,
+    );
     for (const match of componentLinks) {
       links.push({
         match: match[0],
         url: match[1],
-        line: index + 1
+        line: index + 1,
       });
     }
   });
@@ -64,7 +68,7 @@ function extractLinks(content: string): Array<{ match: string; url: string; line
 function checkRelativePath(basePath: string, relativePath: string): boolean {
   try {
     const fullPath = resolve(dirname(basePath), relativePath);
-    const fs = require('fs');
+    const fs = require("fs");
     return fs.existsSync(fullPath);
   } catch {
     return false;
@@ -73,7 +77,7 @@ function checkRelativePath(basePath: string, relativePath: string): boolean {
 
 /** Generate fixes for a file */
 async function generateFixes(filePath: string): Promise<LinkFix[]> {
-  const content = readFileSync(filePath, 'utf-8');
+  const content = readFileSync(filePath, "utf-8");
   const links = extractLinks(content);
   const fixes: LinkFix[] = [];
 
@@ -89,24 +93,24 @@ async function generateFixes(filePath: string): Promise<LinkFix[]> {
           line,
           original: match,
           fixed: match.replace(url, fixed),
-          reason: `Fixed typo: ${typo} → ${correction}`
+          reason: `Fixed typo: ${typo} → ${correction}`,
         });
         continue;
       }
     }
 
     // Check relative paths
-    if (url.startsWith('./') || url.startsWith('../')) {
+    if (url.startsWith("./") || url.startsWith("../")) {
       if (!checkRelativePath(filePath, url)) {
         // Try common fixes
-        const mdxVersion = url.replace(/\.md$/, '.mdx');
+        const mdxVersion = url.replace(/\.md$/, ".mdx");
         if (checkRelativePath(filePath, mdxVersion)) {
           fixes.push({
             file: filePath,
             line,
             original: match,
             fixed: match.replace(url, mdxVersion),
-            reason: 'Fixed extension: .md → .mdx'
+            reason: "Fixed extension: .md → .mdx",
           });
         }
       }
@@ -129,14 +133,16 @@ async function applyFixes(fixes: LinkFix[], dryRun: boolean): Promise<void> {
   }
 
   for (const [filePath, fileFixes] of fileGroups) {
-    let content = readFileSync(filePath, 'utf-8');
+    let content = readFileSync(filePath, "utf-8");
 
     // Apply fixes in reverse order to preserve line numbers
     const sortedFixes = fileFixes.sort((a, b) => b.line - a.line);
 
     for (const fix of sortedFixes) {
       content = content.replace(fix.original, fix.fixed);
-      console.log(`${dryRun ? '[DRY RUN] ' : ''}Fixed in ${relative(process.cwd(), fix.file)}:${fix.line}`);
+      console.log(
+        `${dryRun ? "[DRY RUN] " : ""}Fixed in ${relative(process.cwd(), fix.file)}:${fix.line}`,
+      );
       console.log(`  ${fix.reason}`);
       console.log(`  - ${fix.original}`);
       console.log(`  + ${fix.fixed}`);
@@ -152,14 +158,16 @@ async function applyFixes(fixes: LinkFix[], dryRun: boolean): Promise<void> {
 /** Main function */
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  const dryRun = args.includes('--dry-run');
-  const patternArg = args.find(arg => arg.startsWith('--pattern='));
-  const pattern = patternArg ? patternArg.split('=')[1] : 'content/**/*.{md,mdx}';
+  const dryRun = args.includes("--dry-run");
+  const patternArg = args.find((arg) => arg.startsWith("--pattern="));
+  const pattern = patternArg
+    ? patternArg.split("=")[1]
+    : "content/**/*.{md,mdx}";
 
-  console.log('🔧 Kanon Link Fixer');
-  console.log('='.repeat(40));
+  console.log("🔧 Kanon Link Fixer");
+  console.log("=".repeat(40));
   console.log(`Pattern: ${pattern}`);
-  console.log(`Mode: ${dryRun ? 'DRY RUN' : 'APPLY FIXES'}`);
+  console.log(`Mode: ${dryRun ? "DRY RUN" : "APPLY FIXES"}`);
   console.log();
 
   try {
@@ -174,7 +182,7 @@ async function main(): Promise<void> {
     }
 
     if (allFixes.length === 0) {
-      console.log('✅ No link issues found!');
+      console.log("✅ No link issues found!");
       return;
     }
 
@@ -184,13 +192,12 @@ async function main(): Promise<void> {
     await applyFixes(allFixes, dryRun);
 
     if (dryRun) {
-      console.log('💡 Run without --dry-run to apply these fixes');
+      console.log("💡 Run without --dry-run to apply these fixes");
     } else {
-      console.log('✅ All fixes applied! Run link validation to verify.');
+      console.log("✅ All fixes applied! Run link validation to verify.");
     }
-
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error("❌ Error:", error);
     process.exit(1);
   }
 }

@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useSyncExternalStore } from 'react';
 
-const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
 interface VideoPlayerProps {
   url: string;
@@ -28,7 +27,7 @@ function getServerSnapshot() {
   return true;
 }
 
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, title }) => {
+export function VideoPlayer({ url, title }: VideoPlayerProps) {
   const isOnline = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   return (
@@ -41,13 +40,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, title }) => {
         </div>
       )}
       <ReactPlayer
-        url={url}
+        src={url}
         width="100%"
         height="100%"
-        controls={true}
+        controls
         className="absolute top-0 left-0"
         title={title}
       />
     </div>
   );
-};
+}

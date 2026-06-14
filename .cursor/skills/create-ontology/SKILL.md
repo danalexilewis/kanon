@@ -1,23 +1,29 @@
+---
+name: create-ontology
+description: Build or refine the ontology schema in .cursor/rules/ontology.mdc from src/references/ and user prompts. Use when defining or updating the knowledge base structure.
+paths: src/ontology/**, src/references/**, .cursor/rules/ontology.mdc
+---
+
 # Create Ontology Skill
 
-This skill reads reference materials from the `src/references/` directory and, guided by a user prompt, produces or updates the **ontology schema** embedded in **`.cursor/rules/ontology.mdc`**. That rule defines entity types, event types, relationships, and their mapping to `content/` folders. The skill may also add or update templates under `.cursor/skills/templates/`.
+Reads reference materials from `src/references/` and, guided by a user prompt, produces or updates the **ontology schema** embedded in **`.cursor/rules/ontology.mdc`**. May add templates under `update-docs/references/templates/`.
 
-**Model:** Use a high-reasoning model when developing your ontology; the template doesn't prescribe which one.
+**Model:** Use a high-reasoning model when developing your ontology.
 
 ## Inputs
 
 - Files under `src/references/` (PDFs, docs, etc.).
-- User prompt (specifying ontology requirements, examples, or questions).
-- Existing ontology schema in `.cursor/rules/ontology.mdc` (to update incrementally).
+- User prompt (requirements, examples, questions).
+- Existing schema in `.cursor/rules/ontology.mdc` (incremental updates).
 
 ## Outputs
 
-- Updated `.cursor/rules/ontology.mdc` (the embedded YAML schema block and any rule text).
-- Optional files under `.cursor/skills/templates/` (e.g., entity or event templates).
+- Updated `.cursor/rules/ontology.mdc` (embedded YAML schema and rule text).
+- Optional templates in `.cursor/skills/update-docs/references/templates/`.
 
 ## Key Behaviors
 
-- **Schema Definition**: Translates user requirements and reference content into a structured ontology definition within the ontology rule. This includes defining entity types, their properties, relationships, event types, and how they map to documentation sections in `content/`.
-- **Incremental Updates**: When the rule already contains an ontology block, the skill will update it by adding new definitions, refining existing ones, or adjusting relationships based on new references or prompts, while preserving existing, valid definitions.
-- **Consistency**: Ensures the ontology is internally consistent and adheres to best practices for knowledge representation.
-- **Template Generation**: Can create or update Markdown templates under `.cursor/skills/templates/` to guide `update-docs` or direct authoring.
+- **Schema definition**: Entity types, properties, relationships, event types, and `content/` folder mapping.
+- **Incremental updates**: Add, refine, or adjust; preserve valid existing definitions.
+- **Consistency**: Internally consistent ontology aligned with knowledge-representation best practices.
+- **Templates**: Create or update Markdown templates to guide `update-docs`.
