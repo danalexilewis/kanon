@@ -193,3 +193,7 @@ Or ask an agent:
 ```text
 Install dependencies (pnpm) and run the dev server. Use pnpm run dev. Tell me when the server is up and what URL to open.
 ```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
