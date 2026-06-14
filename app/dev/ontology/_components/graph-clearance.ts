@@ -1,6 +1,6 @@
 /**
- * Nudges nodes when unrelated edges transit too close (e.g. Person→Interaction
- * corridor clipping Organization). Runs after dagre and again after libavoid routes.
+ * Nudges nodes when unrelated edges transit too close.
+ * See ../GRAPH-ROUTING.md and .cursor/rules/ontology-dev-tool.mdc.
  */
 import type { Edge, Node } from "@xyflow/react";
 import type { SchemaNodeData } from "@/lib/dev/types";

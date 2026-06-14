@@ -1,7 +1,7 @@
 /**
  * Relationship handle construction and partner-aligned placement.
  * Handles are node-level edge anchors; Y position follows the connected node.
- * Design notes: ../GRAPH-ROUTING.md
+ * Design notes: ../GRAPH-ROUTING.md · Agent index: .cursor/rules/ontology-dev-tool.mdc
  */
 import { Position, type Node } from "@xyflow/react";
 import type {

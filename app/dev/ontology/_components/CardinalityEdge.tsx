@@ -20,7 +20,7 @@ export type CardinalityEdgeData = {
 /**
  * ER cardinality markers on the edge path — the only place one/many is rendered.
  * Handles are neutral node-border dots; change these icons to indicate cardinality.
- * See ../GRAPH-ROUTING.md.
+ * See ../GRAPH-ROUTING.md and .cursor/rules/ontology-dev-tool.mdc.
  */
 
 /** Crow's foot marker for "many" end of a relationship. */

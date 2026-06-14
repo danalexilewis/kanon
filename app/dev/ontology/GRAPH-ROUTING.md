@@ -1,130 +1,187 @@
-# Schema graph — edge and handle routing
+# Schema graph — layout and routing
 
-How relationships become edges, how handles are chosen, and how to reason about clean layouts.
+How the ontology dev tool builds the ER graph: edges, handles, libavoid routing, and transit clearance.
+
+**Agent index:** `.cursor/rules/ontology-dev-tool.mdc` (glob-loaded for `app/dev/ontology/**`, `lib/dev/**`).
+
+---
+
+## File map
+
+| File                        | Role                                                             |
+| --------------------------- | ---------------------------------------------------------------- |
+| `lib/dev/parse-ontology.ts` | Parse `ontology.mdc` → types, relationships, coverage, sources   |
+| `lib/dev/types.ts`          | `RelationshipEdge`, `SchemaNodeData`, `SchemaRelationshipHandle` |
+| `SchemaGraph.tsx`           | Build nodes/edges, dagre layout, transit clearance pass 1        |
+| `schema-handles.ts`         | Handle construction, partner-aligned Y, collision spread         |
+| `graph-clearance.ts`        | Transit corridor detection, node `dy` nudges                     |
+| `SchemaNode.tsx`            | ER node UI + handle dots                                         |
+| `useLibavoid.ts`            | WASM router, pins, waypoints, transit clearance pass 2           |
+| `CardinalityEdge.tsx`       | Orthogonal path + crow's foot / one markers                      |
+| `SchemaDetailPanel.tsx`     | Relationship list with cardinality text                          |
+
+---
 
 ## Pipeline
 
 ```
-ontology.mdc properties
+ontology.mdc (YAML)
   → parse-ontology: buildRelationships()
-  → SchemaGraph: buildRelationshipHandles() + getRelationshipHandleId()
-  → SchemaNode: render handles + computePartnerAlignedHandleTops()
-  → libavoid: route edges around node obstacles
+  → SchemaGraph: buildRelationshipHandles() + dagre layout
+  → graph-clearance: adjustTransitClearance()        [pass 1]
+  → SchemaNode: computePartnerAlignedHandleTops()
+  → useLibavoid: route edges around node shapes
+  → graph-clearance: computeRouteClearanceOffsets()  [pass 2, ≤4×]
+  → CardinalityEdge: render path + cardinality icons
 ```
 
-## Step 1 — Which edges exist?
+Each layer has a fixed job. **libavoid does not choose handles.** **dagre does not clear transit corridors.** Our code owns handle Y and obstacle-node nudges.
 
-`buildRelationships()` in `lib/dev/parse-ontology.ts` scans every reference property on every type and emits **one edge per type-pair** (deduped by sorted pair key).
+---
 
-Property names (`sourceProperty` / `targetProperty`) are used for edge labels and the detail panel only — not for handle placement.
+## Edges (parser)
 
-| Edge                       | Source type  | Target type  |
+`buildRelationships()` in `lib/dev/parse-ontology.ts` scans reference properties and emits **one edge per type-pair** (deduped by sorted pair key).
+
+| Edge                       | Source       | Target       |
 | -------------------------- | ------------ | ------------ |
 | Person ↔ Organization      | Person       | Organization |
 | Person ↔ Interaction       | Person       | Interaction  |
 | Organization ↔ Interaction | Organization | Interaction  |
 
-Edge direction follows the **first** raw ref in parse order. Cardinality comes from whether each side's property is an array (`many`) or scalar (`one`).
+- **Direction** — first raw ref in parse order (entities first, properties top-to-bottom).
+- **Cardinality** — `array` → `many`, scalar reference → `one` on each end via reciprocal property.
+- **Labels** — `sourceProperty` / `targetProperty` for edge label and inspector only; not handle placement.
 
-## Cardinality icons — edges only, not handles
+**Parser gotcha:** `extractReferenceTargetsFromRawYaml` must resolve property names by **line index**. Duplicate comment lines like `type: reference # to Person entities` break `indexOf` and drop reciprocals (wrong `one` cardinality).
 
-Relationship cardinality (`one` vs `many`) is shown **only on the edge**, via SVG markers in `CardinalityEdge.tsx`:
+---
 
-| Marker                      | Meaning |
-| --------------------------- | ------- |
-| Crow's foot (three prongs)  | `many`  |
-| Single vertical bar + cross | `one`   |
+## Cardinality icons (edges only)
 
-**Handles are neutral dots on the node border.** They do not encode cardinality or map to a property row. To change how a relationship reads visually, update the edge markers in `CardinalityEdge` — not the handle shape.
+| Marker      | Meaning |
+| ----------- | ------- |
+| Crow's foot | `many`  |
+| Bar + cross | `one`   |
 
-Cardinality data flows:
+Handles are neutral border dots. Change `CardinalityEdge.tsx` markers to change cardinality display — not handle shape.
 
 ```
-ontology property type (array vs reference)
-  → parse-ontology: sourceCardinality / targetCardinality on RelationshipEdge
-  → SchemaGraph: edge.data.sourceCardinality / targetCardinality
-  → CardinalityEdge: crowFootMarkerPath() vs oneMarkerPath() per end
+ontology array vs reference
+  → RelationshipEdge.sourceCardinality / targetCardinality
+  → edge.data in SchemaGraph
+  → CardinalityEdge crowFootMarkerPath() vs oneMarkerPath()
 ```
 
-If an edge shows `one` when the schema property is `array[]`, check that `referenceTarget` was inferred for the reciprocal property in `extractReferenceTargetsFromRawYaml`. A missing reciprocal defaults `targetCardinality` to `one` even when the source side is `many`.
+---
 
-## Step 2 — Which handle owns an edge?
+## Handles
 
-**Rule: one handle per relationship end, keyed by `relationshipId`.**
+**Rule:** one handle per relationship end, keyed by `relationshipId`.
 
-On each node, `buildRelationshipHandles()` walks `schema.relationships`:
+- Source type → **right** (`source`)
+- Target type → **left** (`target`)
+- Wired via `getRelationshipHandleId(data, relationship.id, "source" | "target")`
 
-- If this node is `sourceType` → **source** handle on the **right**
-- If this node is `targetType` → **target** handle on the **left**
+Handles are **node-level** — not aligned to property rows.
 
-`SchemaGraph` wires edges with:
+### Partner-aligned Y (`schema-handles.ts`)
 
-```ts
-sourceHandle = getRelationshipHandleId(sourceData, relationship.id, "source");
-targetHandle = getRelationshipHandleId(targetData, relationship.id, "target");
-```
+After dagre positions nodes:
 
-Each relationship gets its own handle pair. Handles are not shared across edges.
+1. Each handle's ideal Y = **partner node vertical center** (flow coords → node-relative `top`)
+2. Colliding handles on the same side: nudge apart (`MIN_HANDLE_GAP` 56px)
+3. If partner ideals crowd: **spread evenly** across the full side
 
-## Step 3 — Where on the node does the handle sit?
+Recomputes on drag via `useStore` in `SchemaNode`. Invalidates libavoid shapes via `getHandleLayoutSignature`.
 
-Handles are **node-level attachment points** on the left or right border. They are not aligned to property rows.
+| Constant         | Value |
+| ---------------- | ----- |
+| `MIN_HANDLE_GAP` | 56    |
+| `SIDE_INSET`     | 18    |
+| `HEADER_HEIGHT`  | 36    |
+| `ROW_HEIGHT`     | 24    |
 
-**Handle Y is chosen by our layout logic, not libavoid.** libavoid routes between fixed pins; it does not pick which handle to use.
+---
 
-`computePartnerAlignedHandleTops()` runs after dagre positions nodes:
+## libavoid (`useLibavoid.ts`)
 
-1. For each handle, read the **partner node's vertical center** in flow coordinates
-2. Convert to a node-relative `top` for that handle
-3. On each side, **nudge colliding handles apart** (`MIN_HANDLE_GAP`) while staying inside the node body
+- WASM: `public/libavoid.wasm`
+- Node shapes = measured bounding boxes
+- Pins = React Flow `handleBounds` (handle center, connection direction from side)
+- Writes intermediate waypoints to `edge.data.points` (excludes source/target)
+- `CardinalityEdge` builds path: source → waypoints → target
 
-So Person→Interaction uses handles at roughly the same height on both nodes when dagre places them level — not top-on-one-side / bottom-on-the-other from alphabetical slot assignment.
+| Parameter              | Value |
+| ---------------------- | ----- |
+| `shapeBufferDistance`  | 28    |
+| `idealNudgingDistance` | 24    |
 
-When a node is dragged, handle positions recompute from current partner positions and libavoid shapes invalidate via `getHandleLayoutSignature`.
+---
 
-## Transit clearance — moving nodes away from unrelated edges
+## Transit clearance (`graph-clearance.ts`)
 
-libavoid routes around node **shapes**, but a routed edge can still run horizontally **just above or below** a node in the middle column (e.g. Person→Interaction clipping Organization). The edge path is fine; the **obstacle node** needs to shift.
+**Problem:** libavoid routes around node shapes, but a horizontal segment can still run just above/below an unrelated node in the middle column (e.g. Person→Interaction clipping Organization). The edge is fine; the **obstacle node** must move.
 
-`graph-clearance.ts` runs in two passes:
+**Solution:** detect transit corridors and nudge obstructing nodes vertically.
 
-1. **Post-dagre** (`adjustTransitClearance`) — estimates transit Y from handle/partner centers before first paint
-2. **Post-libavoid** (`computeRouteClearanceOffsets`) — inspects actual horizontal segments from routed waypoints; nudges obstructing nodes by `dy` (up to 4 iterations)
+### Pass 1 — post-dagre (`adjustTransitClearance`)
 
-For each edge, any node sitting in the horizontal corridor between source and target (excluding endpoints) is checked. If a horizontal segment passes within `TRANSIT_NODE_CLEARANCE` (52px + label padding) of that node's bounds, the node moves down or up — whichever needs less travel — until clear.
+Before first paint. Estimates transit Y from partner-aligned handle centers (or node center fallback). Any node between source.right and target.left (excluding endpoints) within clearance → `dy` nudge.
 
-## Reasoning framework — cleanest lines
+### Pass 2 — post-libavoid (`computeRouteClearanceOffsets`)
 
-### 1. One handle per edge end
+After routed waypoints exist. Scans **horizontal segments** in each edge polyline. Obstructing node in corridor + segment within clearance → `dy` nudge. Up to **4 iterations** (`MAX_ROUTE_CLEARANCE_PASSES`); resets on `layoutKey` change.
 
-Never share handles across relationships. One edge → one source handle + one target handle.
+| Constant                 | Value                      |
+| ------------------------ | -------------------------- |
+| `TRANSIT_NODE_CLEARANCE` | 52                         |
+| `LABEL_CLEARANCE`        | 16 (extra for edge labels) |
+| `SCHEMA_NODE_WIDTH`      | 280                        |
 
-### 2. Layout direction (dagre)
+**Push logic:** compute `pushDown` vs `pushUp` to place node clear of segment Y; take smaller movement. Merge per-node: keep largest absolute offset.
 
-Dagre uses `rankdir: "LR"`. Sources exit **right**, targets enter **left**.
+---
 
-### 3. Partner-aligned handle Y (our logic)
+## dagre (`SchemaGraph.tsx`)
 
-Match each handle's Y to its connected node's center. This is separate from dagre (node positions) and libavoid (orthogonal paths between pins).
+| Setting   | Value                               |
+| --------- | ----------------------------------- |
+| `rankdir` | `LR`                                |
+| `nodesep` | 140 (vertical gap, same rank)       |
+| `ranksep` | 280 (horizontal gap, between ranks) |
 
-### 4. Separate handles before routing
+Sources exit right; targets enter left.
 
-`MIN_HANDLE_GAP` (56px) between handles on the same side. When partner nodes align vertically and ideals would crowd, handles **spread evenly** across the full side instead of stacking at minimal separation.
+---
 
-### 5. Route around obstacles (libavoid)
+## Debugging checklist
 
-Shapes match measured node bounds with `shapeBufferDistance` 28px; paths nudge with `idealNudgingDistance` 24px. Dagre uses `nodesep` 140 / `ranksep` 280 for node spacing.
+| Symptom                                    | Check                                                                |
+| ------------------------------------------ | -------------------------------------------------------------------- |
+| Edge shows `one` but property is `array[]` | Reciprocal `referenceTarget` in parser (line-index bug)              |
+| Top handle → bottom handle diagonal        | Partner-aligned Y not running; stale handle tops                     |
+| Handles crowded on one side                | `MIN_HANDLE_GAP` / `spreadEvenlyInZone` in `resolveHandleCollisions` |
+| Edge clips unrelated node                  | `graph-clearance` passes; bump `TRANSIT_NODE_CLEARANCE`              |
+| Edge floats off handles                    | Handle bounds vs libavoid pins; shape signature stale                |
+| Path through node                          | `shapeBufferDistance`; measured width/height zero                    |
+
+---
 
 ## Known tensions
 
-| Choice                      | Benefit                                 | Cost                                                 |
-| --------------------------- | --------------------------------------- | ---------------------------------------------------- |
-| One handle per relationship | Unambiguous edge wiring                 | More handles on busy types                           |
-| Node-level handles          | Simple, no false property-row semantics | Edge may not visually "belong" to a field            |
-| Partner-aligned handle Y    | Horizontal-ish edges, fewer diagonals   | Recomputes on drag; libavoid does not choose handles |
-| Pair dedup in parser        | Simple graph (3 edges not 6)            | Edge direction follows parse order                   |
+| Choice                      | Benefit                                 | Cost                                       |
+| --------------------------- | --------------------------------------- | ------------------------------------------ |
+| One handle per relationship | Unambiguous wiring                      | More handles on busy types                 |
+| Node-level handles          | No false property semantics             | Edge doesn't "belong" to a field visually  |
+| Partner-aligned Y           | Horizontal-ish edges                    | Recomputes on drag; not libavoid's job     |
+| Transit clearance           | Clean corridors without rerouting edges | Extra layout passes; may fight manual drag |
+| Pair dedup in parser        | 3 edges not 6                           | Edge direction follows parse order         |
+
+---
 
 ## Future improvements
 
-- Stable relationship parse order independent of YAML property declaration order
-- Iterative refinement: adjust dagre ranks using handle alignment cost
+- Stable relationship parse order independent of YAML property order
+- Dagre rank cost using handle alignment / transit clearance preview
+- Optional user lock on manually placed nodes (skip clearance nudge)

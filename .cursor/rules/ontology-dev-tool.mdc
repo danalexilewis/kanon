@@ -1,0 +1,110 @@
+---
+description: Ontology dev tool at /dev/ontology — schema graph, parser, inspector. Read before changing app/dev/ontology or lib/dev.
+globs: app/dev/ontology/**, lib/dev/**
+alwaysApply: false
+---
+
+# Ontology dev tool — agent index
+
+Dev route: **`/dev/ontology`** (`app/dev/ontology/page.dev.tsx`). Server-loads schema via `loadOntologySchema()`; client UI in `OntologyTool.tsx`.
+
+**Canonical graph doc:** [`app/dev/ontology/GRAPH-ROUTING.md`](../../app/dev/ontology/GRAPH-ROUTING.md) — read before changing layout, routing, handles, or clearance.
+
+---
+
+## Index cards
+
+### Schema parser
+
+|                     |                                                                                                                                                                         |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **When**            | Edges wrong, cardinality wrong, reference targets missing, coverage/source tabs                                                                                         |
+| **Read**            | `lib/dev/parse-ontology.ts`, `lib/dev/types.ts`                                                                                                                         |
+| **Source of truth** | `.cursor/rules/ontology.mdc` (YAML block)                                                                                                                               |
+| **Key idea**        | `buildRelationships()` dedupes type-pairs; `extractReferenceTargetsFromRawYaml` must use **line index** (not `indexOf`) when duplicate `type: reference` comments exist |
+| **Gotcha**          | Missing reciprocal `referenceTarget` → `targetCardinality` defaults to `one`                                                                                            |
+
+### Graph build & dagre layout
+
+|               |                                                                                                                  |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **When**      | Node spacing, initial positions, selection dimming                                                               |
+| **Read**      | `app/dev/ontology/_components/SchemaGraph.tsx`                                                                   |
+| **Key idea**  | `buildGraphElements()` → `layoutGraph()` (dagre `LR`, `nodesep` 140, `ranksep` 280) → `adjustTransitClearance()` |
+| **Constants** | `NODE_WIDTH` 280, `HANDLE_OVERFLOW` 16                                                                           |
+
+### Handles (node-level pins)
+
+|               |                                                                                                                                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **When**      | Which handle an edge uses, handle Y position, crowding on one side                                                                                                                              |
+| **Read**      | `schema-handles.ts`, `SchemaNode.tsx`                                                                                                                                                           |
+| **Key idea**  | One handle per relationship end (`relationshipId` + source/target). **Not** tied to property rows. Y from `computePartnerAlignedHandleTops()` — partner node vertical center + collision spread |
+| **Constants** | `MIN_HANDLE_GAP` 56, `SIDE_INSET` 18                                                                                                                                                            |
+| **Don't**     | Let libavoid choose handles; don't sort handles by `relationshipId` for Y                                                                                                                       |
+
+### Edge routing (libavoid)
+
+|               |                                                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **When**      | Orthogonal paths, edges through nodes, WASM load                                                                                                                   |
+| **Read**      | `useLibavoid.ts`, `public/libavoid.wasm`                                                                                                                           |
+| **Key idea**  | Shapes = measured node bounds; pins = React Flow `handleBounds`. Routes between fixed handles. `getHandleLayoutSignature` invalidates shapes when handle Y changes |
+| **Constants** | `shapeBufferDistance` 28, `idealNudgingDistance` 24                                                                                                                |
+| **Requires**  | `ReactFlowProvider`, `nodesInitialized`, measured node dimensions                                                                                                  |
+
+### Transit clearance (obstacle nodes)
+
+|               |                                                                                                                                                                  |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **When**      | Unrelated edge clips a node (e.g. Person→Interaction over Organization)                                                                                          |
+| **Read**      | `graph-clearance.ts`, GRAPH-ROUTING.md § Transit clearance                                                                                                       |
+| **Key idea**  | Edge path can be correct while a **middle-column node** needs to move. Two passes: post-dagre estimate, post-libavoid horizontal-segment scan (max 4 iterations) |
+| **Constants** | `TRANSIT_NODE_CLEARANCE` 52 + `LABEL_CLEARANCE` 16                                                                                                               |
+| **Don't**     | Reroute the edge — nudge obstructing nodes with `dy`                                                                                                             |
+
+### Cardinality markers
+
+|                     |                                                                                                                |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **When**            | Crow's foot vs one marker, wrong many/one display                                                              |
+| **Read**            | `CardinalityEdge.tsx`, `SchemaDetailPanel.tsx`                                                                 |
+| **Key idea**        | Cardinality renders **on the edge only** (`sourceCardinality` / `targetCardinality`). Handles are neutral dots |
+| **Fix cardinality** | Parser / reciprocal targets — not handle shape                                                                 |
+
+### Inspector & tabs
+
+|          |                                                                                                                                          |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **When** | Detail panel, coverage, sources, about tab                                                                                               |
+| **Read** | `OntologyTool.tsx`, `SchemaInspector.tsx`, `SchemaDetailPanel.tsx`, `ContentCoverage.tsx`, `SourceDistribution.tsx`, `AboutOntology.tsx` |
+
+---
+
+## Layer responsibilities (quick reference)
+
+```
+ontology.mdc
+  → parse-ontology.ts (buildRelationships)
+  → SchemaGraph (dagre + edges)
+  → adjustTransitClearance (post-dagre)
+  → SchemaNode (partner-aligned handles)
+  → useLibavoid (orthogonal routes)
+  → computeRouteClearanceOffsets (post-route, up to 4×)
+  → CardinalityEdge (markers + waypoints)
+```
+
+| Layer           | Owns                                             |
+| --------------- | ------------------------------------------------ |
+| dagre           | Node ranks and coarse spacing                    |
+| schema-handles  | Handle count, side (L/R), Y alignment to partner |
+| libavoid        | Path geometry between fixed pins                 |
+| graph-clearance | Moving nodes away from transit corridors         |
+
+---
+
+## After changing code
+
+- `pnpm exec tsc --noEmit`
+- Reload `/dev/ontology` — drag nodes to verify handle + clearance recomputation
+- Update `GRAPH-ROUTING.md` if layout constants or pipeline order changes

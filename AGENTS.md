@@ -17,21 +17,24 @@ Skills: `create-ontology`, `ingest`, `update-docs`. Run in that order — define
 
 ## Key folders
 
-| Path              | Purpose                                              |
-| ----------------- | ---------------------------------------------------- |
-| `src/ingest/`     | Raw material (append-only, hook-protected)           |
-| `src/sources/`    | Canonical Markdown sources                           |
-| `src/references/` | Reference material for ontology                      |
-| `src/ontology/`   | Optional glossary                                    |
-| `content/`        | Derived Fumadocs output (generated, not hand-edited) |
-| `public/media/`   | Media library (`YYYY-MM-DD_slug/` with `meta.json`)  |
-| `app/`            | Next.js + Fumadocs app                               |
-| `lib/`            | Source loader, utilities                             |
-| `.cursor/`        | Rules, skills, hooks, plans                          |
+| Path                | Purpose                                                                    |
+| ------------------- | -------------------------------------------------------------------------- |
+| `src/ingest/`       | Raw material (append-only, hook-protected)                                 |
+| `src/sources/`      | Canonical Markdown sources                                                 |
+| `src/references/`   | Reference material for ontology                                            |
+| `src/ontology/`     | Optional glossary                                                          |
+| `content/`          | Derived Fumadocs output (generated, not hand-edited)                       |
+| `public/media/`     | Media library (`YYYY-MM-DD_slug/` with `meta.json`)                        |
+| `app/`              | Next.js + Fumadocs app                                                     |
+| `app/dev/ontology/` | Dev-only ontology tool (`/dev/ontology`) — schema graph, coverage, sources |
+| `lib/`              | Source loader, utilities                                                   |
+| `lib/dev/`          | Ontology parser and types used by the dev tool                             |
+| `.cursor/`          | Rules, skills, hooks, plans                                                |
 
 ## Working conventions
 
 - **Rules** load via glob or agent-request — no always-apply rules. See `.cursor/rules/`.
+- **Ontology dev tool** — `/dev/ontology` graph, parser, inspector. Glob rule: `.cursor/rules/ontology-dev-tool.mdc`. Deep doc: `app/dev/ontology/GRAPH-ROUTING.md`.
 - **Skills** use three-tier loading: metadata → `SKILL.md` → `references/` on demand. See `.cursor/skills/`.
 - **Plans** live in `.cursor/plans/`. Use the `plan` skill to create or update them.
 - **Hooks** in `.cursor/hooks/` enforce pipeline safety (ingest revert, pipeline reminders). Formatting runs via Husky pre-commit, not Cursor hooks.
@@ -58,3 +61,11 @@ Skills: `create-ontology`, `ingest`, `update-docs`. Run in that order — define
 - Exclude `app/sw.ts` from `tsconfig.json` `exclude` — its webworker lib breaks `window` in client components. The SW is built by esbuild (Serwist), not the main TS build.
 - Prefer `useSyncExternalStore` for `navigator.onLine` in client components (SSR-safe).
 - Use `Glob` to enumerate directories when a list-directory view is needed.
+
+## Dev tools (index)
+
+| Tool                  | Route           | Agent entry                                                                 |
+| --------------------- | --------------- | --------------------------------------------------------------------------- |
+| **Ontology dev tool** | `/dev/ontology` | `.cursor/rules/ontology-dev-tool.mdc` → `app/dev/ontology/GRAPH-ROUTING.md` |
+
+**Ontology graph layers** (read GRAPH-ROUTING before changing): dagre layout → partner-aligned handles → libavoid routing → transit clearance (nudge obstacle nodes when unrelated edges clip them). Handles are node-level pins, not property rows. Cardinality icons live on edges only (`CardinalityEdge.tsx`).
