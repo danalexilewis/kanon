@@ -37,6 +37,17 @@ Glob-scoped or agent-requested — no always-apply rules. Full list in README; k
 
 Exclude `app/sw.ts` from `tsconfig.json` — its webworker lib breaks `window` in client components.
 
+### Chat to Docs (optional)
+
+The docs UI includes an AI chat panel powered by [OpenRouter](https://openrouter.ai/). Copy `.env.example` to `.env.local` and set:
+
+| Variable             | Required | Purpose                                            |
+| -------------------- | -------- | -------------------------------------------------- |
+| `OPENROUTER_API_KEY` | Yes      | API key for chat and context export                |
+| `OPENROUTER_MODEL`   | No       | Model slug (default: `google/gemma-4-31b-it:free`) |
+
+Without `OPENROUTER_API_KEY`, the chat API returns 503 and the panel still opens but cannot send messages.
+
 ---
 
 ## Plans

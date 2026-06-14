@@ -1,1 +1,4 @@
-{"title":"Guides","pages":["markdown-guide","advanced-guide"]}
+{
+  "title": "Guides",
+  "pages": ["setup-guide", "markdown-guide", "advanced-guide"]
+}

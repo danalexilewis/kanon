@@ -3,27 +3,24 @@ title: Knowledge base
 description: Your knowledge base will appear here after you run the pipeline.
 ---
 
-# Waiting for ontology to be created
+# Your knowledge base is being set up
 
-This site is generated from your **sources** and **ontology**. Until you run the pipeline, there’s nothing to show yet.
+This site is generated from your **sources** and **ontology** using Cursor. Until the pipeline runs, there's nothing to show yet — and that's expected.
 
-## How to get started
+<Callout type="info" title="What to do next">
+  Open your project in **Cursor** and follow the **README** in the root of your
+  repo. It walks you through creating your ontology, ingesting content, and
+  publishing docs to this site.
+</Callout>
 
-1. **Import files into `src/references/`**  
-   Add PDFs, docs, or other reference material that describes how you want your knowledge base structured.
+## Where am I in the pipeline?
 
-2. **Create your ontology**  
-   Run the **`create-ontology`** skill (using `src/references/` and a short prompt) to define entity types, events, and how they map to the docs. The schema is saved in `.cursor/rules/ontology.mdc`.
+Not sure what state your project is in? See the [Setup guide](/docs/guides/setup-guide) for a walkthrough of each stage and what to do when you're stuck.
 
-3. **Add files to `src/ingest/`**  
-   Drop raw material here: transcripts, notes, meeting dumps, etc. Append only—don’t edit files after adding.
+## Already have content?
 
-4. **Run the `ingest` skill**  
-   Process everything in `src/ingest/` into normalized Markdown in `src/sources/` and media in `src/media/`. Manifests in `src/ingest/` are updated automatically.
+If you've run the pipeline and still see this page, the `update-docs` skill may not have replaced this file yet. Open Cursor and ask it to run `update-docs` — this landing page will be replaced with your knowledge base index.
 
-5. **Run the `update-docs` skill**  
-   Generate (or refresh) the published docs in `content/` from `src/sources/` and the ontology. The site will then show your knowledge base.
-
-After that, the **/docs** section of this site will reflect your content. Re-run **`ingest`** when you add new raw files, and **`update-docs`** when you change sources or the ontology.
+---
 
 New to formatting? See the [Markdown guide](/docs/guides/markdown-guide) (GFM + examples) and the [Advanced guide](/docs/guides/advanced-guide) (Callouts, Cards, and other Fumadocs components).

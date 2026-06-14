@@ -1,5 +1,7 @@
 @import 'fumadocs-twoslash/twoslash.css';
 
+@import '@xyflow/react/dist/style.css' layer(base);
+
 @import 'tailwindcss';
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
@@ -8,3 +10,11 @@
 @source "../components/**/*.{tsx,ts,jsx,js}";
 @source "../content/**/*.{md,mdx}";
 @source "../src/**/*.{tsx,ts,jsx,js}";
+
+@layer base {
+  a[href],
+  button:not(:disabled),
+  [role='button']:not(:disabled):not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+}

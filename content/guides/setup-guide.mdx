@@ -1,0 +1,122 @@
+---
+title: Setup guide
+description: Pipeline stages, common blocked states, and what to do about them.
+---
+
+# Setup guide
+
+Kanon turns raw material into a published knowledge base through a Cursor-driven pipeline. This guide explains each stage, what the site looks like at each point, and what to do when something isn't working.
+
+<Callout type="info" title="All pipeline work happens in your repo">
+  Everything below happens in **Cursor** inside your local repo. This deployed
+  site only shows the output — you can't configure the pipeline from here.
+</Callout>
+
+---
+
+## The pipeline at a glance
+
+Your content flows through four stages:
+
+| Stage             | What happens                                                                     | Where it lives                 |
+| ----------------- | -------------------------------------------------------------------------------- | ------------------------------ |
+| **1. References** | You add material that describes how the knowledge base should be structured      | `src/references/`              |
+| **2. Ontology**   | Cursor builds a schema (entity types, events, doc sections) from your references | `.cursor/rules/ontology.mdc`   |
+| **3. Ingest**     | Raw files (transcripts, notes, dumps) are normalized into source Markdown        | `src/ingest/` → `src/sources/` |
+| **4. Docs**       | Source Markdown is shaped by the ontology into the published site                | `src/sources/` → `content/`    |
+
+Each stage has a Cursor skill: `create-ontology`, `ingest`, `update-docs`. Run them in that order.
+
+---
+
+## Common states and what to do
+
+### "Your knowledge base is being set up"
+
+**What it means:** The pipeline hasn't run yet. The site is showing the default landing page.
+
+**What to do:**
+
+1. Open your repo in Cursor
+2. Follow the README — it walks through each step
+3. Start with adding references and creating your ontology
+
+---
+
+### Ontology not created yet
+
+**What it means:** No schema has been defined, so Cursor doesn't know what types of content to generate (people, events, articles, etc.).
+
+**What to do:**
+
+1. Add reference material to `src/references/` — PDFs, docs, or notes that describe the structure you want
+2. Ask Cursor to run the `create-ontology` skill
+3. Review the generated schema in `.cursor/rules/ontology.mdc`
+
+---
+
+### No content after running ingest
+
+**What it means:** Raw files were processed into `src/sources/`, but the published docs in `content/` haven't been generated yet.
+
+**What to do:**
+
+- Ask Cursor to run the `update-docs` skill
+- This reads `src/sources/` and the ontology, then generates the pages you see on this site
+
+---
+
+### Content is stale or missing new material
+
+**What it means:** You've added new files to `src/ingest/` but the site doesn't reflect them.
+
+**What to do:**
+
+1. Run the `ingest` skill to process new raw files into `src/sources/`
+2. Run `update-docs` to regenerate the site from the updated sources
+3. Deploy (push to your hosting provider)
+
+---
+
+### Site builds but pages are empty
+
+**What it means:** The `content/` files exist but don't have meaningful content. This usually means `src/sources/` is empty or the ontology doesn't match the source structure.
+
+**What to do:**
+
+1. Check that `src/sources/` has Markdown files (not just manifests)
+2. Check that the ontology in `.cursor/rules/ontology.mdc` defines doc paths that match your content
+3. Re-run `update-docs`
+
+---
+
+### Build or deploy errors
+
+**What it means:** Something in the generated content or app code is broken.
+
+**What to do:**
+
+1. Run `pnpm run build` locally to see the error
+2. Run `pnpm exec tsc --noEmit` to check for TypeScript issues
+3. Common causes: broken MDX syntax in `content/`, missing components, or invalid frontmatter
+
+---
+
+## Quick reference
+
+| I want to…                         | Do this in Cursor                                    |
+| ---------------------------------- | ---------------------------------------------------- |
+| Define my knowledge base structure | Add refs to `src/references/`, run `create-ontology` |
+| Add raw content                    | Drop files in `src/ingest/`, run `ingest`            |
+| Publish to the site                | Run `update-docs`, then deploy                       |
+| Update after adding new material   | Run `ingest` then `update-docs`                      |
+| Fix a broken build                 | Run `pnpm run build` locally, check the error        |
+
+---
+
+<Callout type="info" title="More help">
+  For formatting and authoring, see the [Markdown
+  guide](/docs/guides/markdown-guide) and [Advanced
+  guide](/docs/guides/advanced-guide). For pipeline details, check the
+  **README** in your repo root.
+</Callout>

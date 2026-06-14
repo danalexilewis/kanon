@@ -4,6 +4,7 @@ node_modules/
 out/
 dist/
 .source/
+*.tsbuildinfo
 
 # OS and editor
 .DS_Store

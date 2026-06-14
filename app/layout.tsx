@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { RootProvider } from 'fumadocs-ui/provider/next';
-import './globals.css';
+import { RootProvider } from "fumadocs-ui/provider/next";
+import "./globals.css";
 import { SerwistProvider } from "@/app/serwist";
 import { OfflineBadge } from "@/app/components/OfflineBadge";
+import { FumadocsProviders } from "@/components/fumadocs-providers";
 
 const APP_NAME = "Kanon Knowledge Base";
 const APP_DEFAULT_TITLE = "Kanon Knowledge Base";
@@ -56,10 +57,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <RootProvider>
-          <SerwistProvider swUrl="/serwist/sw.js">
-            {children}
-            <OfflineBadge />
-          </SerwistProvider>
+          <FumadocsProviders>
+            <SerwistProvider swUrl="/serwist/sw.js">
+              {children}
+              <OfflineBadge />
+            </SerwistProvider>
+          </FumadocsProviders>
         </RootProvider>
       </body>
     </html>

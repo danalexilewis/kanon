@@ -8,7 +8,7 @@ alwaysApply: false
 
 These rules define the ontology schema, including entity types, event types, relationships, and how these map to the structure and content generation for the `content/` (Fumadocs) directory.
 
-### Ontology Schema Definition (embedded example)
+## Ontology Schema Definition (embedded example)
 
 This is an example of the ontology schema contract that the agent should adhere to. It outlines the structure for entities, events, relationships, and their mapping to `content/` folders. This schema can be extended or modified directly within this rule file.
 
@@ -16,6 +16,7 @@ This is an example of the ontology schema contract that the agent should adhere 
 # Example Ontology Definition
 entity_types:
   - name: Person
+    description: "A human individual. People participate in interactions and belong to organizations."
     properties:
       - name: name
         type: string
@@ -23,12 +24,19 @@ entity_types:
       - name: email
         type: string
         format: email
-      - name: organization
-        type: reference # to an Organization entity
+      - name: organizations
+        type: array
+        items:
+          type: reference # to Organization entities
+      - name: interactions
+        type: array
+        items:
+          type: reference # to Interaction events
     doc_path: content/entities/people/
     template: .cursor/skills/update-docs/references/templates/person-entity.md
 
   - name: Organization
+    description: "A company, team, or group. Organizations have people and participate in interactions."
     properties:
       - name: name
         type: string
@@ -36,12 +44,24 @@ entity_types:
       - name: website
         type: string
         format: url
+      - name: people
+        type: array
+        items:
+          type: reference # to Person entities
+      - name: interactions
+        type: array
+        items:
+          type: reference # to Interaction events
     doc_path: content/entities/organizations/
     template: .cursor/skills/update-docs/references/templates/organization-entity.md
 
 event_types:
-  - name: Meeting
+  - name: Interaction
+    description: "Any recorded exchange between people and/or organizations. The type field distinguishes meetings, phone calls, emails, chats, etc. Interactions are the primary incoming data feed — intel is harvested from them into entity records. Person, Organization, and Interaction form a three-way many-to-many: an interaction can have many participants and many organizations; people and organizations each connect to many interactions."
     properties:
+      - name: type
+        type: string
+        format: "enum (meeting, phone_call, email, chat, purchase, invoice, receipt)"
       - name: date
         type: string
         format: date-time
@@ -50,10 +70,14 @@ event_types:
         type: array
         items:
           type: reference # to Person entities
-      - name: topic
+      - name: organizations
+        type: array
+        items:
+          type: reference # to Organization entities
+      - name: notes
         type: string
-    doc_path: content/events/meetings/
-    template: .cursor/skills/update-docs/references/templates/meeting-event.md
+    doc_path: content/events/interactions/
+    template: .cursor/skills/update-docs/references/templates/interaction-event.md
 
 doc_sections:
   - name: Docs
