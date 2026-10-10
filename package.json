@@ -1,66 +1,50 @@
 {
   "name": "kanon",
-  "version": "0.1.0",
+  "version": "2.0.0-dev",
+  "description": "Local-first knowledge indexes. Repos are sources; QMD is the search engine; never-rest is the contract.",
+  "type": "module",
   "license": "MIT",
-  "private": true,
-  "scripts": {
-    "prepare": "husky",
-    "dev": "next dev",
-    "build": "next build --webpack",
-    "start": "next start",
-    "lint": "next lint",
-    "validate-links": "tsx scripts/validate-links.ts",
-    "fix-links": "tsx scripts/fix-links.ts",
-    "fix-links:dry-run": "tsx scripts/fix-links.ts --dry-run"
+  "bin": {
+    "kanon": "./dist/cli/main.js"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/sdk/index.d.ts",
+      "import": "./dist/sdk/index.js"
+    }
+  },
+  "scripts": {
+    "kanon": "tsx src/cli/main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "docs:index": "tsx scripts/docs-index.ts --update",
+    "docs:search": "tsx scripts/docs-index.ts --search",
+    "docs:get": "tsx scripts/docs-index.ts --get"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.33.3",
   "dependencies": {
-    "@ai-sdk/react": "^3.0.207",
-    "@openrouter/ai-sdk-provider": "^2.9.1",
-    "@radix-ui/react-dialog": "^1.1.16",
-    "@radix-ui/react-presence": "^1.1.6",
-    "ai": "^6.0.205",
-    "clsx": "^2.1.1",
-    "flexsearch": "^0.8.212",
-    "fumadocs-core": "^16",
-    "fumadocs-mdx": "^14.0.0",
-    "fumadocs-twoslash": "^3.1.13",
-    "fumadocs-ui": "^16",
-    "libavoid-js": "0.5.0-beta.5",
-    "lucide-react": "^1.18.0",
-    "next": "^16",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-markdown": "^10.1.0",
-    "react-player": "^3.4.0",
-    "remark-gfm": "^4.0.1",
-    "tailwind-merge": "^3.6.0",
-    "twoslash": "^0.3.6",
+    "@eddy-works/never-rest": "file:../never-rest",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@tobilu/qmd": "2.8.3",
+    "neverthrow": "^8.2.0",
+    "yaml": "^2.8.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@serwist/turbopack": "^9.5.6",
-    "@tailwindcss/postcss": "^4.2.0",
-    "@types/dagre": "^0.7.54",
-    "@types/mdx": "^2.0.0",
-    "@types/node": "^22.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@xyflow/react": "^12.11.0",
-    "autoprefixer": "^10.4.0",
-    "dagre": "^0.8.5",
-    "esbuild": "^0.27.3",
-    "husky": "^9.1.7",
-    "next-validate-link": "^1.6.4",
-    "postcss": "^8.4.0",
-    "prettier": "^3.8.1",
-    "serwist": "^9.5.6",
-    "tailwindcss": "^4.2.0",
-    "tsx": "^4.21.0",
-    "typescript": "^5.0.0",
-    "yaml": "^2.9.0"
+    "@eslint/js": "^9.28.0",
+    "@types/node": "^24.6.0",
+    "eslint": "^9.28.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.33.1",
+    "vitest": "^3.2.4"
   },
-  "overrides": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0"
+  "pnpm": {
+    "onlyBuiltDependencies": ["better-sqlite3", "esbuild"]
   }
 }

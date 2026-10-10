@@ -1,0 +1,21 @@
+collections:
+  kanon-docs:
+    path: docs
+    pattern: '**/*.md'
+    context:
+      '': Kanon v2 documentation. Describes the current tree, not a frozen spec.
+  kanon-plans:
+    path: plans
+    pattern: '**/*.md'
+  kanon-root:
+    path: .
+    pattern: '{README,AGENTS}.md'
+  never-rest-docs:
+    path: ../never-rest/docs
+    pattern: '**/*.md'
+  never-rest-specs:
+    path: ../never-rest/specs
+    pattern: '**/*.md'
+  never-rest-plans:
+    path: ../never-rest/plans
+    pattern: '**/*.md'

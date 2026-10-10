@@ -1,71 +1,54 @@
-# Kanon — Agent Instructions
+# Kanon — Agent instructions
 
-Kanon is a **knowledge system template**, not a code project. It turns raw material into a published knowledge base through a Cursor-driven pipeline. **Data flow:** ingest → sources → docs (shaped by ontology). **Skill run order:** create-ontology → ingest → update-docs. The output is a Fumadocs site (Next.js 16 + React 19).
+Kanon is a **local-first knowledge tool**, not a website and not an editor
+plugin. Repositories become sources. QMD builds physically separate indexes.
+A never-rest contract exposes search and get. An optional MCP server opens
+only the indexes a project is granted.
 
-For content corrections when writing to `content/`, see `.cursor/corrections.md`. For ingest normalization, see `src/sources/corrections.md`.
+These notes describe the current tree. They are not a spec.
 
-## The pipeline
+## Question → doc
 
-Stages (data flow):
+| Question | Where |
+| --- | --- |
+| What is Kanon now? | [README.md](README.md) · [docs/index.md](docs/index.md) |
+| How do the pieces fit? | [docs/architecture.md](docs/architecture.md) |
+| What is trusted, and what is not? | [docs/threat-model.md](docs/threat-model.md) |
+| Source repo layout and `kanon.yml` | [docs/standard/source-manifest.md](docs/standard/source-manifest.md) |
+| Document frontmatter | [docs/standard/document-format.md](docs/standard/document-format.md) |
+| Machine config, indexes, grants | [docs/standard/machine-config.md](docs/standard/machine-config.md) |
+| How do I add a source? | [docs/guides/add-a-source.md](docs/guides/add-a-source.md) |
+| How do I search? | [docs/guides/search.md](docs/guides/search.md) |
+| How do agents connect? | [docs/guides/mcp.md](docs/guides/mcp.md) |
+| Why rewrite in place? | [docs/decisions/0001-rewrite-in-place.md](docs/decisions/0001-rewrite-in-place.md) |
+| Why pin QMD 2.8.3? | [docs/decisions/0002-pinned-qmd-sdk.md](docs/decisions/0002-pinned-qmd-sdk.md) |
+| Why is an index the unit of access? | [docs/decisions/0003-index-is-unit-of-access.md](docs/decisions/0003-index-is-unit-of-access.md) |
+| What does a project ID prove? | [docs/decisions/0004-local-project-identity.md](docs/decisions/0004-local-project-identity.md) |
+| Current implementation plan | [plans/20261011-kanon-v2-local-first.md](plans/20261011-kanon-v2-local-first.md) |
+| Source review | [docs/background/never-rest-local-knowledge-review-2026-10-11.md](docs/background/never-rest-local-knowledge-review-2026-10-11.md) |
 
-1. **Ingest** — Raw material drops into `src/ingest/` (append-only). The `ingest` skill normalizes it into `src/sources/`.
-2. **Sources** — Canonical Markdown in `src/sources/`. This is the source of truth; if `content/` disagrees, sources win.
-3. **Ontology** — Schema defined in `.cursor/rules/ontology.mdc`. Built with `create-ontology` from `src/references/`.
-4. **Docs** — `update-docs` generates `content/` (Fumadocs MDX). Do not hand-edit `content/` when it disagrees with sources.
+## Coding conventions
 
-Skills: `create-ontology`, `ingest`, `update-docs`. Run in that order — define ontology before ingesting.
+- Functional TypeScript. Named functions. No classes.
+- Handlers return `neverthrow` Results. Zod schemas are strict.
+- Domain code does not import an agent SDK, editor API, or UI framework.
+- Tests run under `test/setup.ts`, which points `KANON_HOME`,
+  `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`, and `QMD_CONFIG_DIR` at a temp dir.
+  Never touch the operator's real `~/.config/qmd`.
+- After changing docs or plans, run `pnpm docs:index`.
 
-## Key folders
+## Docs index
 
-| Path                | Purpose                                                                    |
-| ------------------- | -------------------------------------------------------------------------- |
-| `src/ingest/`       | Raw material (append-only, hook-protected)                                 |
-| `src/sources/`      | Canonical Markdown sources                                                 |
-| `src/references/`   | Reference material for ontology                                            |
-| `src/ontology/`     | Optional glossary                                                          |
-| `content/`          | Derived Fumadocs output (generated, not hand-edited)                       |
-| `public/media/`     | Media library (`YYYY-MM-DD_slug/` with `meta.json`)                        |
-| `app/`              | Next.js + Fumadocs app                                                     |
-| `app/dev/ontology/` | Dev-only ontology tool (`/dev/ontology`) — schema graph, coverage, sources |
-| `lib/`              | Source loader, utilities                                                   |
-| `lib/dev/`          | Ontology parser and types used by the dev tool                             |
-| `.cursor/`          | Rules, skills, hooks, plans                                                |
+```bash
+pnpm docs:index
+pnpm docs:search "index access"
+pnpm docs:get kanon-docs/decisions/0003-index-is-unit-of-access.md
+```
 
-## Working conventions
+Lexical by default. Pass `--hybrid` to `docs:search` only when models are
+available.
 
-- **Rules** load via glob or agent-request — no always-apply rules. See `.cursor/rules/`.
-- **Ontology dev tool** — `/dev/ontology` graph, parser, inspector. Glob rule: `.cursor/rules/ontology-dev-tool.mdc`. Deep doc: `app/dev/ontology/GRAPH-ROUTING.md`.
-- **Skills** use three-tier loading: metadata → `SKILL.md` → `references/` on demand. See `.cursor/skills/`.
-- **Plans** live in `.cursor/plans/`. Use the `plan` skill to create or update them.
-- **Hooks** in `.cursor/hooks/` enforce pipeline safety (ingest revert, pipeline reminders). Formatting runs via Husky pre-commit, not Cursor hooks.
-- **Corrections** — two stores: `src/sources/corrections.md` (ingest normalization) and `.cursor/corrections.md` (content generation).
-- **Media** — images/audio downloaded to `public/media/`; video URLs stay as-is. Sources use repo-root links; `content/` uses `/media/...` web paths.
-- Validate TypeScript with `pnpm exec tsc --noEmit` after changing code.
-- `pnpm run dev` uses Turbopack; `pnpm run build` uses Webpack (Serwist compat).
+## Skill run order (obsolete)
 
-## Git Safety Protocol
-
-- Only commit when the user explicitly asks.
-- Never update git config or force-push.
-- Pass commit messages via HEREDOC.
-- Workflow: `git add` → `git commit` → `git status`.
-
-## Learned User Preferences
-
-- When asked to create or add hooks, add the script under `.cursor/hooks/` and register it in `.cursor/hooks.json`. Use Node scripts reading JSON from stdin, `workspace_roots` for repo root.
-- Ingest is protected by `.cursor/hooks/revert-ingest-if-edited.js` — no protection modes (safe/normal/force) and no user-run scripts.
-
-## Learned Workspace Facts
-
-- Image and audio URLs in ingest content are downloaded to `public/media/YYYY-MM-DD_slug/` with `meta.json`; video URLs stay as-is. Sources use repo-root links; `content/` uses `/media/...` web paths with ImageZoom, AudioPlayer, and VideoPlayer.
-- Exclude `app/sw.ts` from `tsconfig.json` `exclude` — its webworker lib breaks `window` in client components. The SW is built by esbuild (Serwist), not the main TS build.
-- Prefer `useSyncExternalStore` for `navigator.onLine` in client components (SSR-safe).
-- Use `Glob` to enumerate directories when a list-directory view is needed.
-
-## Dev tools (index)
-
-| Tool                  | Route           | Agent entry                                                                 |
-| --------------------- | --------------- | --------------------------------------------------------------------------- |
-| **Ontology dev tool** | `/dev/ontology` | `.cursor/rules/ontology-dev-tool.mdc` → `app/dev/ontology/GRAPH-ROUTING.md` |
-
-**Ontology graph layers** (read GRAPH-ROUTING before changing): dagre layout → partner-aligned handles → libavoid routing → transit clearance (nudge obstacle nodes when unrelated edges clip them). Handles are node-level pins, not property rows. Cardinality icons live on edges only (`CardinalityEdge.tsx`).
+v1 skills (`create-ontology`, `ingest`, `update-docs`) are gone. Do not look
+for `src/ingest/` or `content/`.

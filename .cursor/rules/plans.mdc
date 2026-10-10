@@ -1,11 +1,10 @@
 ---
-description: Standards for creating and storing plan documents in .cursor/plans/. Use when creating, updating, or finalizing a plan.
+description: Plans live in the repository-root plans/ directory.
 alwaysApply: false
 ---
 
 # Plans
 
-Plans live in **`.cursor/plans/`** — part of the Cursor agent workflow, not published site content.
-
-- **Historical copy:** Whenever you create or finalize a plan (e.g. via the plan tool or a plan document), also add a copy to **`.cursor/plans/`** for historical reference.
-- Use a stable, descriptive filename (e.g. `plan-name_short-id.plan.md` or `plan-name_YYYY-MM-DD.plan.md`) so past plans are easy to find and don’t overwrite each other.
+Implementation plans live in **`plans/`**. Use a dated filename
+(`YYYYMMDD-slug.md`). Docs describe the current tree and are not specs.
+Update the plan's progress table when a slice lands.

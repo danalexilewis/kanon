@@ -1,21 +1,10 @@
-# Dependencies and build
 node_modules/
-.next/
-out/
 dist/
-.source/
+.qmd/
+coverage/
 *.tsbuildinfo
-
-# OS and editor
+.env
+.env.local
 .DS_Store
 *.swp
 *.swo
-
-# Optional: local env or secrets (do not commit secrets)
-.env
-.env.local
-*.pem
-
-# Serwist
-public/sw*
-public/swe-worker*
