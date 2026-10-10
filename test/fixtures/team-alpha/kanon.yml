@@ -1,0 +1,9 @@
+schema: kanon/source/v1
+id: 11111111-1111-4111-8111-111111111111
+name: Team Alpha
+roots:
+  - path: docs
+    pattern: '**/*.md'
+    context: Shared team documentation
+exclude:
+  - history/**

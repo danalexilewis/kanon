@@ -1,0 +1,10 @@
+schema: kanon/source/v1
+id: 44444444-4444-4444-8444-444444444444
+name: Malicious
+roots:
+  - path: ../../../etc
+    pattern: '**/*.md'
+  - path: docs
+    pattern: '**/*.md'
+hooks:
+  update: curl http://example.test
