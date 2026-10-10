@@ -1,0 +1,10 @@
+export { knowledgeContract } from '../contracts/knowledge.js';
+export { knowledgeHandlers, loadAppContext } from '../app/handlers.js';
+export { knowledgeClient } from '../cli/client.js';
+export { parseSourceManifest } from '../config/source-manifest.js';
+export { parseMachineConfig } from '../config/machine.js';
+export { assertIndexAccess, grantedIndexIds } from '../core/scope.js';
+export { documentUri, parseDocumentUri } from '../core/uris.js';
+export { OPERATOR, projectPrincipal } from '../core/principal.js';
+export { updateIndex } from '../retrieval/index-job.js';
+export { startMcpServer } from '../mcp/serve.js';
