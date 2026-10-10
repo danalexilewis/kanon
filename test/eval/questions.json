@@ -1,0 +1,22 @@
+[
+  {"id":"q1","query":"release process Thursday","index":"team","expectDocId":"59e71e48-76c1-4c01-aab3-1d39a4fe8e64"},
+  {"id":"q2","query":"stable channel reviewers","index":"team","expectDocId":"59e71e48-76c1-4c01-aab3-1d39a4fe8e64"},
+  {"id":"q3","query":"dirty tree push","index":"team","expectDocId":"59e71e48-76c1-4c01-aab3-1d39a4fe8e64"},
+  {"id":"q4","query":"on-call incident","index":"team","expectDocId":"8c04f7bd-a9f4-4f34-dde6-4062d7ab1b97"},
+  {"id":"q5","query":"production credentials fixtures","index":"team","expectDocId":"8c04f7bd-a9f4-4f34-dde6-4062d7ab1b97"},
+  {"id":"q6","query":"fika ytterdörren","index":"team","expectDocId":"7b93e6ac-98e3-4e23-ccd5-3f51c6fa0a86"},
+  {"id":"q7","query":"nycklarna lådan","index":"team","expectDocId":"7b93e6ac-98e3-4e23-ccd5-3f51c6fa0a86"},
+  {"id":"q8","query":"kontorsrutin","index":"team","expectDocId":"7b93e6ac-98e3-4e23-ccd5-3f51c6fa0a86"},
+  {"id":"q9","query":"new members onboarding","index":"team","expectDocId":"6a82f59b-87d2-4d12-bbc4-2e40b5ef9f75"},
+  {"id":"q10","query":"Swedish office note","index":"team","expectDocId":"6a82f59b-87d2-4d12-bbc4-2e40b5ef9f75"},
+  {"id":"q11","query":"checklist two reviewers","index":"team","expectDocId":"59e71e48-76c1-4c01-aab3-1d39a4fe8e64"},
+  {"id":"q12","query":"page the on-call","index":"team","expectDocId":"8c04f7bd-a9f4-4f34-dde6-4062d7ab1b97"},
+  {"id":"q13","query":"klockan tre","index":"team","expectDocId":"7b93e6ac-98e3-4e23-ccd5-3f51c6fa0a86"},
+  {"id":"q14","query":"release process","index":"team","expectDocId":"59e71e48-76c1-4c01-aab3-1d39a4fe8e64"},
+  {"id":"q15","query":"incident response","index":"team","expectDocId":"8c04f7bd-a9f4-4f34-dde6-4062d7ab1b97"},
+  {"id":"q16","query":"onboarding","index":"team","expectDocId":"6a82f59b-87d2-4d12-bbc4-2e40b5ef9f75"},
+  {"id":"q17","query":"garden password","index":"personal","expectPath":"journal/2026-10-11.md"},
+  {"id":"q18","query":"private note","index":"personal","expectPath":"journal/2026-10-11.md"},
+  {"id":"q19","query":"team indexes","index":"personal","expectPath":"journal/2026-10-11.md"},
+  {"id":"q20","query":"11 October","index":"personal","expectPath":"journal/2026-10-11.md"}
+]

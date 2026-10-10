@@ -1,0 +1,11 @@
+schema: kanon/source/v1
+id: 55aa66bb-77cc-488d-899e-000000000001
+name: Kanon
+roots:
+  - path: docs
+    pattern: '**/*.md'
+    context: Kanon v2 current documentation
+  - path: plans
+    pattern: '**/*.md'
+exclude:
+  - history/**
