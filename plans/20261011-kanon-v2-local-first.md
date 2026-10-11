@@ -37,8 +37,9 @@ regeneration of derivatives.
 - Local identity is a declared project ID checked against operator grants. It
   is not isolation from a hostile agent on the same OS account.
 - Pin `@tobilu/qmd@2.8.3`. Never read or write the global `~/.config/qmd`.
-- K0–K3 depend on published `@eddy-works/never-rest@0.6.0`. K4 moves to the
-  never-rest tree that includes `definePolicy` and `./mcp`.
+- Kanon consumes never-rest 0.7.0 (`definePolicy` and `./mcp`), merged to
+  never-rest `main`. npm still publishes 0.6.0, so this tree uses
+  `file:../never-rest` until 0.7.0 is released.
 - Docs describe the current state. Tests and a project-local QMD docs index
   grow with each slice.
 
