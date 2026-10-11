@@ -4,6 +4,7 @@ import { err, ok, type Result } from 'neverthrow';
 
 import type { RailError } from '@eddy-works/never-rest';
 import { connectorAuthRequired, connectorFailed, unsupportedFormat } from '../../errors.js';
+import type { SharingGrant, SharingSnapshot } from '../../circles/types.js';
 import type {
   Connector,
   ConnectorError,
@@ -208,5 +209,87 @@ export function createDriveConnector(deps: DriveDeps): Connector {
     return ok(await response.value.text());
   }
 
-  return { kind: 'google-drive', scheme: 'gdrive', list, read };
+  async function sharing(item: ConnectorItem): Promise<Result<SharingSnapshot, ConnectorError>> {
+    const grants: SharingGrant[] = [];
+    let pageToken: string | undefined;
+    do {
+      const params = new URLSearchParams({
+        supportsAllDrives: 'true',
+        pageSize: '100',
+        fields: 'nextPageToken,permissions(type,role,emailAddress,domain,allowFileDiscovery,deleted,expirationTime,view)',
+        ...(pageToken !== undefined ? { pageToken } : {}),
+      });
+      const response = await request(
+        `${DRIVE_API}/files/${encodeURIComponent(item.externalId)}/permissions?${params.toString()}`,
+      );
+      if (response.isErr()) {
+        if (response.error.code === 'connector_failed' && /Drive API (403|404):/.test(response.error.message)) {
+          return ok({ grants: [], sharing: 'partial' });
+        }
+        return err(response.error);
+      }
+      const page = (await response.value.json()) as {
+        readonly nextPageToken?: string;
+        readonly permissions?: ReadonlyArray<{
+          readonly type?: string;
+          readonly role?: string;
+          readonly emailAddress?: string;
+          readonly domain?: string;
+          readonly allowFileDiscovery?: boolean;
+          readonly deleted?: boolean;
+          readonly expirationTime?: string;
+          readonly view?: string;
+        }>;
+      };
+      for (const permission of page.permissions ?? []) {
+        if (
+          permission.type !== 'user' &&
+          permission.type !== 'group' &&
+          permission.type !== 'domain' &&
+          permission.type !== 'anyone'
+        ) {
+          continue;
+        }
+        grants.push({
+          type: permission.type,
+          ...(permission.emailAddress !== undefined ? { emailAddress: permission.emailAddress } : {}),
+          ...(permission.domain !== undefined ? { domain: permission.domain } : {}),
+          ...(permission.allowFileDiscovery !== undefined
+            ? { allowFileDiscovery: permission.allowFileDiscovery }
+            : {}),
+          ...(permission.deleted !== undefined ? { deleted: permission.deleted } : {}),
+          ...(permission.expirationTime !== undefined ? { expirationTime: permission.expirationTime } : {}),
+          ...(permission.view !== undefined ? { view: permission.view } : {}),
+        });
+      }
+      pageToken = page.nextPageToken;
+    } while (pageToken !== undefined);
+    return ok({ grants, sharing: 'full' });
+  }
+
+  async function canShare(item: ConnectorItem): Promise<Result<boolean, ConnectorError>> {
+    const response = await request(
+      `${DRIVE_API}/files/${encodeURIComponent(item.externalId)}?fields=capabilities(canShare)&supportsAllDrives=true`,
+    );
+    if (response.isErr()) {
+      return err(response.error);
+    }
+    const body = (await response.value.json()) as { capabilities?: { canShare?: boolean } };
+    return ok(body.capabilities?.canShare === true);
+  }
+
+  async function account(): Promise<Result<string, ConnectorError>> {
+    const response = await request(`${DRIVE_API}/about?fields=user(emailAddress)`);
+    if (response.isErr()) {
+      return err(response.error);
+    }
+    const body = (await response.value.json()) as { user?: { emailAddress?: string } };
+    const email = body.user?.emailAddress;
+    if (email === undefined || email.length === 0) {
+      return err(connectorFailed('Drive account has no email'));
+    }
+    return ok(email);
+  }
+
+  return { kind: 'google-drive', scheme: 'gdrive', list, read, sharing, canShare, account };
 }

@@ -26,7 +26,10 @@ import { jobConfigIssues } from '../jobs/doctor.js';
 import { updateIndex } from '../retrieval/index-job.js';
 import { syncSources } from '../sources/sync.js';
 import { knowledgeClient } from './client.js';
+import { dispatchCircleCli } from './circle-commands.js';
 import { dispatchJobCli } from './job-commands.js';
+import { dispatchReviewCli } from './review-commands.js';
+import { dispatchScorerCli } from './scorer-commands.js';
 import { flagBool, flagString, type ParsedCli } from './parse.js';
 import {
   assertWriteAccess,
@@ -317,6 +320,12 @@ const USAGE = `kanon <command>
   ingest list
   ingest scan <id>
   ingest run <id> [--from-scan] [--limit <n>] [--dry-run] [--here]
+  circle init <id> --dir <path> [--members <ids>] [--ceiling <0-3>]
+  circle list
+  circle probe [id]
+  circle check <id> --job <job> --add|--remove <person>
+  review list|queue|level|approve|revoke|exclude|include|score
+  scorer add|list
   device show
   device rename <name>
   connector add <id> --kind google-drive (--client-secret <json> | --service-account <json>)
@@ -403,6 +412,15 @@ export async function dispatchCli(cli: ParsedCli): Promise<void> {
       throw new Error('mcp --project <id>');
     }
     await startMcpServer(project);
+    return;
+  }
+  if (await dispatchCircleCli(cli)) {
+    return;
+  }
+  if (await dispatchReviewCli(cli)) {
+    return;
+  }
+  if (await dispatchScorerCli(cli)) {
     return;
   }
   if (await dispatchJobCli(cli)) {

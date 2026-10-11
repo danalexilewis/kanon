@@ -45,7 +45,9 @@ pnpm kanon schedule install
 pnpm kanon jobs status
 pnpm kanon connector add team-drive --kind google-drive --client-secret client.json
 pnpm kanon connector auth team-drive
-pnpm kanon ingest run policies --dry-run
+pnpm kanon circle init me --dir ~/circles --members operator --ceiling 3
+pnpm kanon ingest scan policies
+pnpm kanon ingest run policies --from-scan --dry-run
 ```
 
 ## Layout
@@ -57,6 +59,10 @@ pnpm kanon ingest run policies --dry-run
 | `src/config` | manifests and machine config |
 | `src/sources` | Git sync and write probes |
 | `src/jobs` | refresh, ingest, tick, OS scheduler |
+| `src/circles` | readers, placement |
+| `src/hosts` | audience check before push |
+| `src/review` | ledger and approvals |
+| `src/scoring` | local signals and optional model |
 | `src/connectors` | connector interface and Google Drive |
 | `src/retrieval` | QMD adapter and index jobs |
 | `src/cli` | standalone CLI |

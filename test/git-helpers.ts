@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import { runGit } from '../src/sources/git.js';
@@ -65,6 +65,8 @@ export async function createSourceRemote(
   const url = `file://${bare}`;
   await git(seed, ['push', url, 'main:refs/heads/main']);
   await git(testRoot, ['clone', url, clone]);
+  await chmod(bare, 0o700);
+  await chmod(clone, 0o700);
   return { bare, url, clone };
 }
 
@@ -72,6 +74,7 @@ export async function createSourceRemote(
 export async function cloneRemote(remote: SourceRemote, name: string): Promise<string> {
   const path = join(testRoot, name);
   await git(testRoot, ['clone', remote.url, path]);
+  await chmod(path, 0o700);
   return path;
 }
 

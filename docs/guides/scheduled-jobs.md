@@ -14,8 +14,10 @@ Kanon runs two kinds of job:
 - **Refresh** keeps sources and indexes current. Managed sources are
   fast-forwarded when their remote moved; local sources are rescanned. Every
   source with `refresh` other than `off` takes part (daily by default).
-- **Ingest** pulls documents from a connector into a write-access source and
-  pushes them. See [Google Drive](./google-drive.md).
+- **Ingest** pulls documents from a connector, places each one in a circle
+  on the job's route, and pushes to that circle after an audience check.
+  See [Google Drive](./google-drive.md) and
+  [Circles of trust](./circles-of-trust.md).
 
 ## Install the scheduler
 

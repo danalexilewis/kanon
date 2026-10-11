@@ -20,6 +20,10 @@ This page is the current model, not a certification.
 - Git credentials used by sync and ingest pushes.
 - Connector credentials in `$KANON_HOME/credentials/` (OAuth refresh tokens
   and service-account keys).
+- The review ledger (`$KANON_HOME/reviews/`).
+- The ingest staging cache (`$KANON_CACHE/jobs/staging/`).
+- Scorer API keys in `$KANON_HOME/credentials/`.
+- Local circle bare repos and their checkouts.
 
 ## Trusted
 
@@ -36,6 +40,8 @@ This page is the current model, not a certification.
 - The global `~/.config/qmd` file.
 - Connector content: file names, folder names, Markdown bodies, embedded
   images and frontmatter coming from Google Drive or any later connector.
+- Drive sharing lists. They are a claim, re-checked on every run.
+- Model output from a scorer. It cannot admit a document or lower a level.
 
 ## Local project identity
 
@@ -75,3 +81,17 @@ config file, and the index files. That needs a real execution boundary
 - Ingest never modifies the operator's checkout except by fast-forward.
 - Tests must not read or write the operator's real QMD config, real
   LaunchAgents or systemd units.
+- An ingested document is written only to a circle in the job's route.
+  There is no unrouted ingest.
+- No addition or update is pushed without a passing audience check for
+  that circle. Hosted remotes are unverified until they have a probe.
+- The model proposer never lowers a level and never runs from `tick` or
+  `ingest run`.
+
+## Remaining risks
+
+- Git history still holds a file after it is removed from a circle.
+- Transcripts write down conversations nobody chose to file.
+- A cloud model provider sees the bodies sent to it.
+- Local circle repos sitting inside a synced or backed-up folder inherit
+  that folder's audience.

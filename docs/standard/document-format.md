@@ -60,3 +60,5 @@ doc:
 - Upstream `vars` are kept. Upstream `doc` fields are replaced.
 - Images are moved to `_assets/<sha256>.<ext>` under the target, or
   stripped, depending on the job's `images` setting.
+- `doc.access` records the circle, level, basis and readers. It is not an
+  authority; placement is recomputed from Drive on every run.

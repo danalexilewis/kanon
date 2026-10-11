@@ -7,13 +7,29 @@ import { err, ok, type Result } from 'neverthrow';
 import type { RailError } from '@eddy-works/never-rest';
 import { splitFrontmatter } from '../config/frontmatter.js';
 import {
+  ingestCircles,
+  ingestSourceForCircle,
+  ingestSources,
   ingestTarget,
   sourceBranch,
+  type DocumentAccess,
   type MachineConfig,
   type MachineConnector,
   type MachineIngest,
   type MachineSource,
 } from '../config/schemas.js';
+import { checkAudience, type HostAudience } from '../hosts/audience.js';
+import { placeDocument } from '../circles/placement.js';
+import { documentState, loadLedger } from '../review/io.js';
+import { contentHash, proposedLevel, scoreSignals } from '../scoring/signals.js';
+import {
+  connectorAccount,
+  itemCanShare,
+  itemSharing,
+  readersFor,
+  requireOperatorPerson,
+  toDomainCircles,
+} from './readers.js';
 import { loadSourceManifest } from '../config/source-manifest.js';
 import {
   ASSETS_DIR,
@@ -39,7 +55,7 @@ import {
   runGit,
 } from '../sources/git.js';
 import { remoteUrl } from '../sources/sync.js';
-import { scannedItems, type IngestScan } from './ingest-scan.js';
+import { ownedAcrossRoute, scannedItems, type IngestScan } from './ingest-scan.js';
 import { refreshManagedSource, type SourceRefreshReport } from './refresh.js';
 import { readTargetFiles, resolveIngestTarget, toFs, type OwnedFile } from './target.js';
 
@@ -59,6 +75,22 @@ export interface IngestSkip {
   readonly detail?: string;
 }
 
+export interface CircleIngestReport {
+  readonly circleId: string;
+  readonly sourceId: string;
+  readonly status: IngestStatus | 'audience_too_wide' | 'audience_unverified';
+  readonly attempts: number;
+  readonly added: readonly string[];
+  readonly updated: readonly string[];
+  readonly removed: readonly string[];
+  readonly skipped: readonly IngestSkip[];
+  readonly deferred: number;
+  readonly commit?: string;
+  readonly detail?: string;
+  readonly checkout?: SourceRefreshReport;
+  readonly indexes: readonly string[];
+}
+
 export interface IngestReport {
   readonly jobId: string;
   readonly sourceId: string;
@@ -70,6 +102,10 @@ export interface IngestReport {
   readonly skipped: readonly IngestSkip[];
   /** Changed items left for a later run because of `limit`. */
   readonly deferred: number;
+  readonly held: readonly string[];
+  readonly needsReview: number;
+  readonly narrowed: readonly string[];
+  readonly circles: readonly CircleIngestReport[];
   readonly commit?: string;
   readonly detail?: string;
   /** The operator checkout's fast-forward after a successful push. */
@@ -83,6 +119,7 @@ export interface IngestDeps {
     connector: MachineConnector,
   ) => Promise<Result<Connector, RailError<'connector_auth_required' | 'invalid_config'>>>;
   readonly probeWrite?: (source: MachineSource) => Promise<Result<void, RailError<'write_denied'>>>;
+  readonly checkAudience?: HostAudience;
   /** Runs after the commit is built and before each push attempt. */
   readonly beforePush?: (attempt: number) => Promise<void>;
 }
@@ -155,6 +192,10 @@ async function mirrorIntoWorktree(args: {
   readonly read: (item: ConnectorItem) => Promise<ReadResult>;
   readonly limit?: number;
   readonly log: (line: string) => void;
+  readonly circleId?: string;
+  readonly placementByUri?: ReadonlyMap<string, string | undefined>;
+  readonly deferredUris?: ReadonlySet<string>;
+  readonly accessByUri?: ReadonlyMap<string, DocumentAccess>;
 }): Promise<Result<MirrorChanges, RailError<'invalid_config'>>> {
   const manifest = await loadSourceManifest(args.worktree);
   if (manifest.isErr()) {
@@ -211,8 +252,36 @@ async function mirrorIntoWorktree(args: {
       keepPrior(prior);
       continue;
     }
+    const dest = args.placementByUri?.get(item.uri);
+    if (args.placementByUri !== undefined && dest !== args.circleId) {
+      continue;
+    }
+    if (args.deferredUris?.has(item.uri) === true) {
+      if (prior === undefined || prior.revision !== item.revision) {
+        deferred += 1;
+      }
+      keepPrior(prior);
+      continue;
+    }
     const path = choosePath(item, prior, reserved);
     if (prior !== undefined && prior.revision === item.revision && prior.path === path) {
+      const access = args.accessByUri?.get(item.uri);
+      if (access !== undefined) {
+        const splitPrior = splitFrontmatter(prior.content);
+        const rendered = renderIngestedDocument({
+          item,
+          sourceId: args.sourceId,
+          body: splitPrior.body.replace(/^\s+/, '').replace(/\s*$/, '\n'),
+          access,
+        });
+        if (rendered !== prior.content) {
+          reserved.add(path);
+          keepPaths.add(path);
+          await writeTargetFile(targetAbs.value, path, rendered);
+          updated.push(display(path));
+          continue;
+        }
+      }
       keepPrior(prior);
       continue;
     }
@@ -247,6 +316,7 @@ async function mirrorIntoWorktree(args: {
       sourceId: args.sourceId,
       body: images.markdown,
       ...(vars !== undefined ? { vars } : {}),
+      ...(args.accessByUri?.get(item.uri) !== undefined ? { access: args.accessByUri.get(item.uri) } : {}),
     });
     if (Buffer.byteLength(rendered, 'utf8') > MAX_DOCUMENT_BYTES) {
       skipped.push({ uri: item.uri, title: item.title, reason: 'too_large' });
@@ -275,7 +345,9 @@ async function mirrorIntoWorktree(args: {
 
   const removed: string[] = [];
   for (const file of owned.values()) {
-    if (!seen.has(file.uri) && !keepPaths.has(file.path)) {
+    const dest = args.placementByUri?.get(file.uri);
+    const movedAway = args.placementByUri !== undefined && dest !== args.circleId;
+    if (!keepPaths.has(file.path) && (!seen.has(file.uri) || movedAway)) {
       await rm(toFs(targetAbs.value, file.path), { force: true });
       removed.push(display(file.path));
     }
@@ -341,12 +413,26 @@ export async function runIngest(
   deps: IngestDeps = {},
 ): Promise<IngestReport> {
   const job = (config.ingest ?? []).find((entry) => entry.id === jobId);
-  const empty = { attempts: 0, added: [], updated: [], removed: [], skipped: [], deferred: 0, indexes: [] };
+  const empty = {
+    attempts: 0,
+    added: [],
+    updated: [],
+    removed: [],
+    skipped: [],
+    deferred: 0,
+    held: [],
+    needsReview: 0,
+    narrowed: [],
+    circles: [],
+    indexes: [],
+  };
   const log = options.log ?? (() => undefined);
   if (job === undefined) {
     return { jobId, sourceId: '', status: 'failed', detail: 'Unknown ingest job', ...empty };
   }
-  const base = { jobId, sourceId: job.source };
+  const routeSources = ingestSources(config, job);
+  const source = routeSources[0];
+  const base = { jobId, sourceId: source?.id ?? '' };
   const fail = (status: IngestStatus, detail: string): IngestReport => ({
     ...base,
     status,
@@ -357,7 +443,6 @@ export async function runIngest(
   if (job.device !== undefined && job.device !== options.deviceName && options.here !== true) {
     return fail('assigned_elsewhere', `Assigned to device ${job.device}`);
   }
-  const source = config.sources.find((entry) => entry.id === job.source);
   const connectorConfig = (config.connectors ?? []).find((entry) => entry.id === job.connector);
   if (source === undefined || connectorConfig === undefined) {
     return fail('failed', 'Ingest job references an unknown source or connector');
@@ -374,9 +459,21 @@ export async function runIngest(
   if (connector.isErr()) {
     return fail('failed', connector.error.message);
   }
-  const probe = await (deps.probeWrite ?? probeSourceWrite)(source);
-  if (probe.isErr()) {
-    return fail('write_denied', probe.error.message);
+  let writeDeniedDetail: string | undefined;
+  let writable = 0;
+  for (const routeSource of routeSources) {
+    const probe = await (deps.probeWrite ?? probeSourceWrite)(routeSource);
+    if (probe.isOk()) {
+      writable += 1;
+    } else {
+      writeDeniedDetail = probe.error.message;
+    }
+  }
+  if (writable === 0) {
+    return fail('write_denied', writeDeniedDetail ?? 'Write access denied');
+  }
+  if (options.scan !== undefined && options.scan.schema !== 'kanon/ingest-scan/v2') {
+    return fail('failed', `Scan for ${jobId} is v1; scan again`);
   }
   if (options.scan !== undefined && (options.scan.folder !== job.folder || options.scan.connector !== job.connector)) {
     return fail('failed', `Scan for ${jobId} does not match the job's connector and folder; scan again`);
@@ -394,6 +491,26 @@ export async function runIngest(
     return fail('failed', listed.error.message);
   }
 
+  const account = await connectorAccount(connector.value);
+  if (account.isErr()) {
+    return fail('failed', account.error.message);
+  }
+  const operator = requireOperatorPerson(config, account.value);
+  if (operator.isErr()) {
+    return fail('failed', operator.error.message);
+  }
+  const ledger = await loadLedger(jobId);
+  const domainCircles = toDomainCircles(config);
+  const placementByUri = new Map<string, string | undefined>();
+  const accessByUri = new Map<string, DocumentAccess>();
+  const deferredUris = new Set<string>();
+  const held: string[] = [];
+  const narrowed: string[] = [];
+  let needsReview = 0;
+  const owned = await ownedAcrossRoute(config, job, connector.value.scheme);
+  if (owned.isErr()) {
+    return fail('failed', owned.error.message);
+  }
   const cache = new Map<string, ReadResult>();
   const read = async (item: ConnectorItem): Promise<ReadResult> => {
     const key = `${item.externalId}@${item.revision}`;
@@ -405,45 +522,222 @@ export async function runIngest(
     cache.set(key, result);
     return result;
   };
+  let downloads = 0;
 
-  const branch = sourceBranch(source);
-  const url = remoteUrl(source);
-  const dir = jobWorktree(job, source);
+  for (const item of listed.value) {
+    const snapshot = await itemSharing(connector.value, item);
+    const readers = readersFor(config, account.value, snapshot);
+    const canShare = await itemCanShare(connector.value, item);
+    const review = documentState(ledger.state, item.uri);
+    const prior = owned.value.owned.get(item.uri);
+    let body = prior !== undefined ? splitFrontmatter(prior.content).body : '';
+    if (item.formats.includes('markdown') && prior?.revision !== item.revision) {
+      if (options.limit !== undefined && downloads >= options.limit) {
+        deferredUris.add(item.uri);
+      } else {
+        const fetched = await read(item);
+        downloads += 1;
+        if (fetched.isOk()) {
+          body = splitFrontmatter(fetched.value).body;
+        }
+      }
+    }
+    const signals = scoreSignals({
+      title: item.title,
+      body,
+      readers,
+      operatorId: operator.value.id,
+    });
+    const level = proposedLevel({
+      signalLevel: signals.level,
+      ...(review.proposedLevel !== undefined ? { modelLevel: review.proposedLevel } : {}),
+      ...(review.finalLevel !== undefined ? { finalLevel: review.finalLevel } : {}),
+    });
+    const placement = placeDocument({
+      route: job.route,
+      circles: domainCircles,
+      readers,
+      level,
+      review,
+      contentHash: contentHash(body),
+      canShare,
+    });
+    placementByUri.set(item.uri, placement.circle);
+    if (placement.held) {
+      held.push(item.uri);
+      if (review.excluded !== true) {
+        needsReview += 1;
+      }
+    } else if (placement.circle !== undefined) {
+      accessByUri.set(item.uri, {
+        circle: placement.circle,
+        level: placement.level,
+        basis: placement.basis ?? 'sharing',
+        readers: [...readers.people],
+        others: readers.others,
+        ...(placement.basis === 'promotion' ? { approver: review.approvals[placement.circle]?.by } : {}),
+      });
+    }
+  }
+
+  const circleReports: CircleIngestReport[] = [];
+  for (const circle of ingestCircles(config, job)) {
+    const circleSource = ingestSourceForCircle(config, job, circle.id);
+    if (circleSource === undefined) {
+      continue;
+    }
+    const report = await pushCircle({
+      config,
+      job,
+      circleId: circle.id,
+      source: circleSource,
+      connector: connector.value,
+      items: listed.value,
+      read,
+      author,
+      options,
+      deps,
+      log,
+      placementByUri,
+      deferredUris,
+      accessByUri,
+    });
+    circleReports.push(report);
+  }
+
+  const added = circleReports.flatMap((report) => report.added);
+  const updated = circleReports.flatMap((report) => report.updated);
+  const removed = circleReports.flatMap((report) => report.removed);
+  const skipped = circleReports.flatMap((report) => report.skipped);
+  const deferred = circleReports.reduce((sum, report) => sum + report.deferred, 0);
+  const indexes = [...new Set(circleReports.flatMap((report) => report.indexes))];
+  const pushed = circleReports.find((report) => report.status === 'pushed');
+  const failed = circleReports.find(
+    (report): report is CircleIngestReport & { status: 'failed' | 'push_rejected' | 'write_denied' } =>
+      report.status === 'failed' || report.status === 'push_rejected' || report.status === 'write_denied',
+  );
+  const status: IngestStatus =
+    failed !== undefined
+      ? failed.status
+      : pushed !== undefined
+        ? 'pushed'
+        : options.dryRun === true
+          ? 'dry_run'
+          : 'unchanged';
+
+  return {
+    ...base,
+    status,
+    attempts: Math.max(1, ...circleReports.map((report) => report.attempts)),
+    added,
+    updated,
+    removed,
+    skipped,
+    deferred,
+    held,
+    needsReview,
+    narrowed,
+    circles: circleReports,
+    ...(pushed?.commit !== undefined ? { commit: pushed.commit } : {}),
+    ...(pushed?.checkout !== undefined ? { checkout: pushed.checkout } : {}),
+    ...(failed?.detail !== undefined ? { detail: failed.detail } : {}),
+    indexes,
+  };
+}
+
+async function pushCircle(args: {
+  readonly config: MachineConfig;
+  readonly job: MachineIngest;
+  readonly circleId: string;
+  readonly source: MachineSource;
+  readonly connector: Connector;
+  readonly items: readonly ConnectorItem[];
+  readonly read: (item: ConnectorItem) => Promise<ReadResult>;
+  readonly author: { readonly name: string; readonly email: string };
+  readonly options: IngestOptions;
+  readonly deps: IngestDeps;
+  readonly log: (line: string) => void;
+  readonly placementByUri: ReadonlyMap<string, string | undefined>;
+  readonly deferredUris: ReadonlySet<string>;
+  readonly accessByUri: ReadonlyMap<string, DocumentAccess>;
+}): Promise<CircleIngestReport> {
+  const empty = { attempts: 0, added: [], updated: [], removed: [], skipped: [], deferred: 0, indexes: [] };
+  const base = { circleId: args.circleId, sourceId: args.source.id };
+  const fail = (
+    status: CircleIngestReport['status'],
+    detail: string,
+    attempts = 0,
+  ): CircleIngestReport => ({ ...base, ...empty, status, detail, attempts });
+
+  if (!(await gitIsRepo(args.source.path))) {
+    return fail('failed', 'Source path is not a git repository');
+  }
+  const probe = await (args.deps.probeWrite ?? probeSourceWrite)(args.source);
+  if (probe.isErr()) {
+    return fail('write_denied', probe.error.message);
+  }
+
+  const branch = sourceBranch(args.source);
+  const url = remoteUrl(args.source);
+  const dir = jobWorktree(args.job, args.source);
   let lastDetail = '';
 
   for (let attempt = 1; attempt <= MAX_PUSH_ATTEMPTS; attempt += 1) {
-    const tip = await gitFetchBranch(source.path, url, branch);
+    const tip = await gitFetchBranch(args.source.path, url, branch);
     if (tip.isErr()) {
-      return { ...fail('failed', tip.error.message), attempts: attempt };
+      return fail('failed', tip.error.message, attempt);
     }
-    await resetWorktree(source.path, dir);
-    const added = await gitWorktreeAdd(source.path, dir, tip.value);
+    await resetWorktree(args.source.path, dir);
+    const added = await gitWorktreeAdd(args.source.path, dir, tip.value);
     if (added.code !== 0) {
-      return { ...fail('failed', added.stderr || 'worktree add failed'), attempts: attempt };
+      return fail('failed', added.stderr || 'worktree add failed', attempt);
     }
 
     try {
       const changes = await mirrorIntoWorktree({
         worktree: dir,
-        job,
-        sourceId: source.id,
-        connector: connector.value,
-        items: listed.value,
-        read,
-        ...(options.limit !== undefined ? { limit: options.limit } : {}),
-        log,
+        job: args.job,
+        sourceId: args.source.id,
+        connector: args.connector,
+        items: args.items,
+        read: args.read,
+        ...(args.options.limit !== undefined ? { limit: args.options.limit } : {}),
+        log: args.log,
+        circleId: args.circleId,
+        placementByUri: args.placementByUri,
+        deferredUris: args.deferredUris,
+        accessByUri: args.accessByUri,
       });
       if (changes.isErr()) {
-        return { ...fail('failed', changes.error.message), attempts: attempt };
+        return fail('failed', changes.error.message, attempt);
       }
       const report = { ...base, ...changes.value, attempts: attempt, indexes: [] as string[] };
 
-      await runGit(dir, ['add', '-A', '--', ingestTarget(job)]);
+      await runGit(dir, ['add', '-A', '--', ingestTarget(args.job)]);
       const diff = await runGit(dir, ['diff', '--cached', '--quiet']);
-      if (diff.code === 0) {
-        return { ...report, status: options.dryRun === true ? 'dry_run' : 'unchanged' };
+      const removalOnly = changes.value.added.length === 0 && changes.value.updated.length === 0 && changes.value.removed.length > 0;
+      const audience = await (args.deps.checkAudience ?? checkAudience)(
+        args.config.circles?.find((circle) => circle.id === args.circleId) ?? {
+          id: args.circleId,
+          source: args.source.id,
+          members: [],
+          ceiling: 3,
+        },
+        args.source,
+      );
+      if (audience.isErr()) {
+        if (audience.error.code === 'audience_too_wide' && removalOnly && args.options.dryRun !== true) {
+          args.log(`Audience too wide for ${args.circleId}; pushing removals only`);
+        } else if (audience.error.code === 'audience_too_wide' && !removalOnly) {
+          return { ...report, status: 'audience_too_wide', detail: audience.error.message };
+        } else {
+          return { ...report, status: 'audience_unverified', detail: audience.error.message };
+        }
       }
-      if (options.dryRun === true) {
+      if (diff.code === 0) {
+        return { ...report, status: args.options.dryRun === true ? 'dry_run' : 'unchanged' };
+      }
+      if (args.options.dryRun === true) {
         return { ...report, status: 'dry_run' };
       }
 
@@ -451,13 +745,13 @@ export async function runIngest(
         dir,
         [
           '-c',
-          `user.name=${author.name}`,
+          `user.name=${args.author.name}`,
           '-c',
-          `user.email=${author.email}`,
+          `user.email=${args.author.email}`,
           'commit',
           '--no-gpg-sign',
           '-m',
-          commitMessage(job, changes.value, options.deviceName),
+          commitMessage(args.job, changes.value, args.options.deviceName),
         ],
         { credentials: true },
       );
@@ -466,11 +760,11 @@ export async function runIngest(
       }
       const commitSha = await gitHead(dir);
 
-      await deps.beforePush?.(attempt);
-      log(`Pushing to ${branch}`);
+      await args.deps.beforePush?.(attempt);
+      args.log(`Pushing to ${branch}`);
       const pushed = await gitPush(dir, url, branch);
       if (pushed.status === 'pushed') {
-        const checkout = await refreshManagedSource(config, source);
+        const checkout = await refreshManagedSource(args.config, args.source);
         return {
           ...report,
           status: 'pushed',
@@ -484,11 +778,9 @@ export async function runIngest(
         return { ...report, status: 'push_rejected', detail: pushed.detail };
       }
     } finally {
-      await resetWorktree(source.path, dir);
+      await resetWorktree(args.source.path, dir);
     }
   }
-  return {
-    ...fail('push_rejected', lastDetail || 'Remote kept moving'),
-    attempts: MAX_PUSH_ATTEMPTS,
-  };
+  return fail('push_rejected', lastDetail || 'Remote kept moving', MAX_PUSH_ATTEMPTS);
 }
+

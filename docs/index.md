@@ -18,12 +18,14 @@ Update them when the code changes.
 | [Threat model](./threat-model.md) | What is trusted |
 | [Source manifest](./standard/source-manifest.md) | `kanon.yml` |
 | [Document format](./standard/document-format.md) | `doc` / `vars` frontmatter |
-| [Machine config](./standard/machine-config.md) | Sources, indexes, projects, grants, connectors, ingest |
+| [Machine config](./standard/machine-config.md) | Sources, indexes, projects, grants, connectors, ingest, circles |
+| [Sensitivity rubric](./standard/sensitivity-rubric.md) | Levels 0–3 |
 | [Add a source](./guides/add-a-source.md) | Operator workflow |
 | [Search](./guides/search.md) | CLI search and get |
 | [MCP](./guides/mcp.md) | Agent access |
 | [Scheduled jobs](./guides/scheduled-jobs.md) | `kanon tick`, refresh, ingest, scheduler |
 | [Google Drive](./guides/google-drive.md) | Connector setup and ingest jobs |
+| [Circles of trust](./guides/circles-of-trust.md) | Placement, review, local repos |
 | [Multiple devices](./guides/multiple-devices.md) | Device identity, assignment, chezmoi |
 | [Decisions](./decisions/0001-rewrite-in-place.md) | ADRs |
 | [Review](./background/never-rest-local-knowledge-review-2026-10-11.md) | Source review |

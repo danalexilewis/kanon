@@ -7,6 +7,18 @@ import type { MachineConfig } from '../src/config/schemas.js';
 
 const fixturesRoot = fileURLToPath(new URL('./fixtures', import.meta.url));
 
+export const OPERATOR_PERSON = { id: 'operator' as const, google: ['operator@example.test'] };
+
+export function soloCircle(sourceId: string, id = 'me') {
+  return {
+    id,
+    source: sourceId,
+    members: ['operator'],
+    ceiling: 3 as const,
+    admit: 'auto' as const,
+  };
+}
+
 export const TEAM_ALPHA_ID = '11111111-1111-4111-8111-111111111111';
 export const TEAM_BETA_ID = '22222222-2222-4222-8222-222222222222';
 export const JOURNAL_ID = '33333333-3333-4333-8333-333333333333';

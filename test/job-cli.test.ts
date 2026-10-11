@@ -11,6 +11,7 @@ import { emptyMachineConfig } from '../src/config/schemas.js';
 import { configPath, credentialsPath } from '../src/env.js';
 import { acquireTickLock } from '../src/jobs/state.js';
 import { createSourceRemote, remoteHead } from './git-helpers.js';
+import { OPERATOR_PERSON, soloCircle } from './helpers.js';
 import { testRoot } from './setup.js';
 
 async function run(argv: readonly string[]): Promise<unknown> {
@@ -79,8 +80,10 @@ describe('job CLI', () => {
     await saveMachineConfig({
       ...emptyMachineConfig(),
       sources: [{ id, kind: 'managed', path: remote.clone, remote: remote.url, branch: 'main', access: 'write' }],
+      people: [OPERATOR_PERSON],
+      circles: [soloCircle(id)],
       connectors: [{ id: 'drive', kind: 'google-drive', auth: 'oauth' }],
-      ingest: [{ id: 'policies', connector: 'drive', source: id, folder: 'f', target: 'docs/policies', device: 'desk' }],
+      ingest: [{ id: 'policies', connector: 'drive', route: ['me'], folder: 'f', target: 'docs/policies', device: 'desk' }],
     });
     const before = await remoteHead(remote);
 

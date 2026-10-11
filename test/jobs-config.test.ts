@@ -23,16 +23,18 @@ function baseConfig(overrides: Record<string, unknown> = {}) {
     indexes: [{ id: 'team', sources: [MANAGED], embed: false }],
     projects: [],
     grants: [],
-    connectors: [{ id: 'dan-drive', kind: 'google-drive', auth: 'oauth' }],
+    people: [{ id: 'operator', google: ['operator@example.test'] }],
+    circles: [{ id: 'me', source: MANAGED, members: ['operator'], ceiling: 3, admit: 'auto' }],
+    connectors: [{ id: 'team-drive', kind: 'google-drive', auth: 'oauth' }],
     ingest: [
       {
         id: 'policies',
-        connector: 'dan-drive',
-        source: MANAGED,
+        connector: 'team-drive',
+        route: ['me'],
         folder: '1AbC',
         target: 'docs/policies',
         schedule: 'weekly',
-        device: 'dan-mbp',
+        device: 'studio',
       },
     ],
     ...overrides,
@@ -40,7 +42,7 @@ function baseConfig(overrides: Record<string, unknown> = {}) {
 }
 
 describe('scheduled job config', () => {
-  it('accepts write sources, connectors and ingest jobs', () => {
+  it('accepts write sources, connectors and routed ingest jobs', () => {
     expect(parseMachineConfig(baseConfig()).isOk()).toBe(true);
   });
 
@@ -58,6 +60,7 @@ describe('scheduled job config', () => {
   it('rejects access: write on a local source', () => {
     const config = baseConfig({
       sources: [{ id: LOCAL, kind: 'local', path: '/tmp/journal', access: 'write' }],
+      circles: [],
       ingest: [],
     });
     const parsed = parseMachineConfig(config);
@@ -68,23 +71,24 @@ describe('scheduled job config', () => {
   it('rejects access: write without a remote', () => {
     const config = baseConfig({
       sources: [{ id: MANAGED, kind: 'managed', path: '/tmp/m', access: 'write' }],
+      circles: [],
       ingest: [],
     });
     expect(parseMachineConfig(config)._unsafeUnwrapErr().message).toMatch(/remote/);
   });
 
-  it('rejects ingest into a read-only source', () => {
+  it('rejects ingest[].source and asks for route', () => {
     const config = baseConfig();
-    (config.sources as Array<Record<string, unknown>>)[0]!.access = 'read';
-    expect(parseMachineConfig(config)._unsafeUnwrapErr().message).toMatch(
-      /access: write/,
-    );
+    (config.ingest as Array<Record<string, unknown>>)[0]!.source = MANAGED;
+    expect(parseMachineConfig(config)._unsafeUnwrapErr().message).toMatch(/use route instead of source/);
   });
 
-  it('rejects ingest into a local source', () => {
-    const config = baseConfig();
-    (config.ingest as Array<Record<string, unknown>>)[0]!.source = LOCAL;
-    expect(parseMachineConfig(config).isErr()).toBe(true);
+  it('rejects a circle whose source is not a write remote', () => {
+    const config = baseConfig({
+      circles: [{ id: 'me', source: LOCAL, members: ['operator'], ceiling: 3, admit: 'auto' }],
+      ingest: [],
+    });
+    expect(parseMachineConfig(config)._unsafeUnwrapErr().message).toMatch(/access: write/);
   });
 
   it('rejects unknown connectors, escaping targets and shared targets', () => {

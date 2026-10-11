@@ -19,6 +19,7 @@ import {
   remoteHead,
   type SourceRemote,
 } from './git-helpers.js';
+import { OPERATOR_PERSON, soloCircle } from './helpers.js';
 
 interface FakeDoc {
   id: string;
@@ -84,11 +85,13 @@ function ingestConfig(
     indexes: [{ id: `idx-${sourceId.slice(-4)}`, sources: [sourceId] }],
     projects: [],
     grants: [],
+    people: [OPERATOR_PERSON],
+    circles: [soloCircle(sourceId)],
     connectors: [{ id: 'fake', kind: 'google-drive', auth: 'oauth' }],
     ingest: jobs.map((job, index) => ({
       id: `job-${index}`,
       connector: 'fake',
-      source: sourceId,
+      route: ['me'],
       folder: 'root',
       target: 'docs/imported',
       ...job,
@@ -374,13 +377,15 @@ describe('two-step ingest', () => {
     const config = ingestConfig(id, remote.clone, remote);
 
     const scan = (await scanIngest(config, 'job-0', {}, deps(fake)))._unsafeUnwrap();
-    expect(scan.totals).toEqual({
+    expect(scan.totals).toMatchObject({
       items: 3,
       folders: 2,
       download: 2,
       unchanged: 0,
       unsupported: 1,
       remove: 0,
+      held: 0,
+      circles: { me: 3 },
     });
     expect(scan.folders).toEqual([
       { path: '.', items: 1, download: 1, unchanged: 0, unsupported: 0 },
@@ -412,6 +417,28 @@ describe('two-step ingest', () => {
     const gone = (await scanIngest(config, 'job-0', {}, deps(fake)))._unsafeUnwrap();
     expect(gone.remove).toEqual(['docs/imported/alpha.md']);
     expect(fake.reads).toEqual(['a1', 'b2']);
+  });
+
+  it('refuses a v1 scan', async () => {
+    const id = '80000000-0000-4000-8000-00000000000e';
+    const remote = await createSourceRemote('ingest-scan-v1', id);
+    const fake = fakeConnector(() => [{ id: 'a', title: 'A', revision: '1', body: '# A\n' }]);
+    const report = await runIngest(
+      ingestConfig(id, remote.clone, remote),
+      'job-0',
+      {
+        scan: {
+          schema: 'kanon/ingest-scan/v1',
+          jobId: 'job-0',
+          connector: 'fake',
+          folder: 'root',
+        } as never,
+      },
+      deps(fake),
+    );
+    expect(report.status).toBe('failed');
+    expect(report.detail).toMatch(/v1/);
+    expect(fake.reads).toEqual([]);
   });
 
   it('refuses a scan taken for another folder', async () => {

@@ -1,6 +1,7 @@
 import { loadDevice } from '../config/device.js';
 import {
   ingestSchedule,
+  ingestSources,
   sourceRefresh,
   type Cadence,
   type MachineConfig,
@@ -69,7 +70,7 @@ export async function jobsStatus(
       kind: 'ingest',
       id: job.id,
       cadence,
-      sourceId: job.source,
+      sourceId: ingestSources(config, job)[0]?.id ?? job.route[0] ?? job.id,
       ...(job.device !== undefined ? { device: job.device } : {}),
       runsHere,
       ...withRecord(record),

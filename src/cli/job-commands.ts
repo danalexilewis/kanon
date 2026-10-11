@@ -198,7 +198,7 @@ async function cmdIngestList(): Promise<void> {
     (config.ingest ?? []).map((job) => ({
       id: job.id,
       connector: job.connector,
-      source: job.source,
+      route: job.route,
       folder: job.folder,
       target: ingestTarget(job),
       schedule: ingestSchedule(job),

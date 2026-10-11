@@ -5,13 +5,20 @@ import { err, ok, type Result } from 'neverthrow';
 import { z } from 'zod';
 
 import type { RailError } from '@eddy-works/never-rest';
-import { ingestTarget, type MachineConfig, type MachineConnector } from '../config/schemas.js';
+import { ingestSources, ingestTarget, type MachineConfig, type MachineConnector } from '../config/schemas.js';
 import { loadSourceManifest } from '../config/source-manifest.js';
 import { ingestDocId } from '../connectors/markdown.js';
 import { createConnector } from '../connectors/registry.js';
 import type { Connector, ConnectorError, ConnectorItem } from '../connectors/types.js';
 import { ingestScanPath } from '../env.js';
 import { invalidConfig } from '../errors.js';
+import {
+  connectorAccount,
+  eligibleOnRoute,
+  itemSharing,
+  readersFor,
+  requireOperatorPerson,
+} from './readers.js';
 import { readTargetFiles, resolveIngestTarget, type OwnedFile } from './target.js';
 
 const scannedItemSchema = z
@@ -29,6 +36,12 @@ const scannedItemSchema = z
     action: z.enum(['download', 'unchanged', 'unsupported']),
     /** Where the job already wrote this item, relative to the target. */
     path: z.string().optional(),
+    circle: z.string().optional(),
+    readers: z.array(z.string()),
+    others: z.number().int(),
+    external: z.number().int(),
+    sharing: z.enum(['full', 'partial']),
+    eligible: z.array(z.string()),
   })
   .strict();
 
@@ -44,7 +57,7 @@ const scanFolderSchema = z
 
 const ingestScanSchema = z
   .object({
-    schema: z.literal('kanon/ingest-scan/v1'),
+    schema: z.literal('kanon/ingest-scan/v2'),
     jobId: z.string().min(1),
     connector: z.string().min(1),
     folder: z.string().min(1),
@@ -59,6 +72,8 @@ const ingestScanSchema = z
         unchanged: z.number().int(),
         unsupported: z.number().int(),
         remove: z.number().int(),
+        held: z.number().int(),
+        circles: z.record(z.string(), z.number().int()),
       })
       .strict(),
     byMimeType: z.record(z.string(), z.number().int()),
@@ -94,7 +109,14 @@ function scanAction(item: ConnectorItem, prior: OwnedFile | undefined): ScannedI
   return prior !== undefined && prior.revision === item.revision ? 'unchanged' : 'download';
 }
 
-function toScannedItem(sourceId: string, item: ConnectorItem, prior: OwnedFile | undefined): ScannedItem {
+function toScannedItem(
+  sourceId: string,
+  item: ConnectorItem,
+  prior: OwnedFile | undefined,
+  extra: Pick<ScannedItem, 'readers' | 'others' | 'external' | 'sharing' | 'eligible'> & {
+    readonly circle?: string;
+  },
+): ScannedItem {
   return {
     externalId: item.externalId,
     uri: item.uri,
@@ -107,7 +129,46 @@ function toScannedItem(sourceId: string, item: ConnectorItem, prior: OwnedFile |
     ...(item.webUrl !== undefined ? { webUrl: item.webUrl } : {}),
     action: scanAction(item, prior),
     ...(prior !== undefined ? { path: prior.path } : {}),
+    ...(extra.circle !== undefined ? { circle: extra.circle } : {}),
+    readers: extra.readers,
+    others: extra.others,
+    external: extra.external,
+    sharing: extra.sharing,
+    eligible: extra.eligible,
   };
+}
+
+export async function ownedAcrossRoute(
+  config: MachineConfig,
+  job: NonNullable<MachineConfig['ingest']>[number],
+  scheme: string,
+): Promise<Result<{ readonly owned: Map<string, OwnedFile & { readonly circleId: string; readonly sourceId: string }> }, RailError<'invalid_config'>>> {
+  const owned = new Map<string, OwnedFile & { readonly circleId: string; readonly sourceId: string }>();
+  const target = ingestTarget(job);
+  for (const circle of (config.circles ?? []).filter((entry) => job.route.includes(entry.id))) {
+    const source = config.sources.find((entry) => entry.id === circle.source);
+    if (source === undefined) {
+      continue;
+    }
+    const manifest = await loadSourceManifest(source.path);
+    if (manifest.isErr()) {
+      return err(manifest.error);
+    }
+    const targetAbs = await resolveIngestTarget(source.path, manifest.value, target);
+    if (targetAbs.isErr()) {
+      return err(targetAbs.error);
+    }
+    const files = await readTargetFiles(targetAbs.value, scheme);
+    if (files.isErr()) {
+      return err(files.error);
+    }
+    for (const file of files.value.owned.values()) {
+      if (!owned.has(file.uri)) {
+        owned.set(file.uri, { ...file, circleId: circle.id, sourceId: source.id });
+      }
+    }
+  }
+  return ok({ owned });
 }
 
 function compareItems(left: ScannedItem, right: ScannedItem): number {
@@ -167,27 +228,27 @@ export async function scanIngest(
   if (job === undefined) {
     return err(invalidConfig('Unknown ingest job id'));
   }
-  const source = config.sources.find((entry) => entry.id === job.source);
+  const sources = ingestSources(config, job);
+  const source = sources[0];
   const connectorConfig = (config.connectors ?? []).find((entry) => entry.id === job.connector);
   if (source === undefined || connectorConfig === undefined) {
     return err(invalidConfig('Ingest job references an unknown source or connector'));
-  }
-  const manifest = await loadSourceManifest(source.path);
-  if (manifest.isErr()) {
-    return err(manifest.error);
-  }
-  const target = ingestTarget(job);
-  const targetAbs = await resolveIngestTarget(source.path, manifest.value, target);
-  if (targetAbs.isErr()) {
-    return err(targetAbs.error);
   }
   const connector = await (deps.connectorFor ?? createConnector)(connectorConfig);
   if (connector.isErr()) {
     return err(connector.error);
   }
-  const files = await readTargetFiles(targetAbs.value, connector.value.scheme);
-  if (files.isErr()) {
-    return err(files.error);
+  const account = await connectorAccount(connector.value);
+  if (account.isErr()) {
+    return err(account.error);
+  }
+  const operator = requireOperatorPerson(config, account.value);
+  if (operator.isErr()) {
+    return err(operator.error);
+  }
+  const collected = await ownedAcrossRoute(config, job, connector.value.scheme);
+  if (collected.isErr()) {
+    return err(collected.error);
   }
 
   options.log?.(`Listing ${job.connector} folder ${job.folder}`);
@@ -195,20 +256,41 @@ export async function scanIngest(
   if (listed.isErr()) {
     return err(listed.error);
   }
-  const { owned } = files.value;
-  const items = listed.value
-    .map((item) => toScannedItem(source.id, item, owned.get(item.uri)))
-    .sort(compareItems);
+  const { owned } = collected.value;
+  const items: ScannedItem[] = [];
+  for (const item of listed.value) {
+    const snapshot = await itemSharing(connector.value, item);
+    const readers = readersFor(config, account.value, snapshot);
+    const eligible = eligibleOnRoute(config, job.route, readers);
+    const prior = owned.get(item.uri);
+    items.push(
+      toScannedItem(prior?.sourceId ?? source.id, item, prior, {
+        readers: [...readers.people],
+        others: readers.others,
+        external: readers.external,
+        sharing: readers.sharing,
+        eligible: [...eligible],
+        ...(prior !== undefined ? { circle: prior.circleId } : {}),
+      }),
+    );
+  }
+  items.sort(compareItems);
   const listedUris = new Set(items.map((item) => item.uri));
+  const target = ingestTarget(job);
   const remove = [...owned.values()]
     .filter((file) => !listedUris.has(file.uri))
     .map((file) => `${target}/${file.path}`)
     .sort();
   const folders = folderTotals(items);
   const count = (action: ScannedItem['action']) => items.filter((item) => item.action === action).length;
+  const circles: Record<string, number> = {};
+  for (const circleId of job.route) {
+    circles[circleId] = items.filter((item) => item.eligible.includes(circleId)).length;
+  }
+  const held = items.filter((item) => item.eligible.length === 0 && item.action !== 'unsupported').length;
 
   const scan: IngestScan = {
-    schema: 'kanon/ingest-scan/v1',
+    schema: 'kanon/ingest-scan/v2',
     jobId,
     connector: job.connector,
     folder: job.folder,
@@ -222,6 +304,8 @@ export async function scanIngest(
       unchanged: count('unchanged'),
       unsupported: count('unsupported'),
       remove: remove.length,
+      held,
+      circles,
     },
     byMimeType: mimeTotals(items),
     folders: [...folders],
@@ -230,6 +314,10 @@ export async function scanIngest(
   };
   await saveIngestScan(scan);
   options.log?.(`Scanned ${items.length} items in ${folders.length} folders`);
+  for (const circleId of job.route) {
+    options.log?.(`  ${circleId}: ${circles[circleId] ?? 0} eligible`);
+  }
+  options.log?.(`  held: ${held}`);
   return ok(scan);
 }
 
@@ -246,6 +334,14 @@ export async function loadIngestScan(jobId: string): Promise<Result<IngestScan, 
     value = JSON.parse(raw) as unknown;
   } catch {
     return err(invalidConfig(`Scan for ${jobId} is not valid JSON; scan again`));
+  }
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'schema' in value &&
+    (value as { schema?: unknown }).schema === 'kanon/ingest-scan/v1'
+  ) {
+    return err(invalidConfig(`Scan for ${jobId} is v1; scan again`));
   }
   const parsed = ingestScanSchema.safeParse(value);
   if (!parsed.success || parsed.data.jobId !== jobId) {

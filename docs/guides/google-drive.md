@@ -9,8 +9,10 @@ doc:
 
 # Google Drive
 
-An ingest job copies a Drive folder into a source as Markdown, commits it
-and pushes it. Google Docs are exported through the Drive API as
+An ingest job copies a Drive folder into **circles** as Markdown. Each
+file's sharing list is read (metadata only) and the document is placed
+in the widest circle that may hold it. Google Docs are exported through
+the Drive API as
 `text/markdown`; uploaded `.md` files are downloaded as they are. Sheets,
 Slides, PDFs, Word files and shortcuts are reported as
 `unsupported_format` and skipped.
@@ -66,10 +68,10 @@ The folder id is the last part of the folder URL,
 ingest:
   - id: policies
     connector: team-drive
-    source: <write-access source id>
+    route: [team, founders, me]
     folder: <folder-id>
     target: docs/policies
-    schedule: weekly
+    schedule: off
 ```
 
 ## Scan, then download
@@ -83,12 +85,11 @@ pnpm kanon doctor
 pnpm kanon ingest scan policies
 ```
 
-The command prints totals, counts per MIME type and per folder, and the
-files a run would delete. The full listing is saved to
-`$KANON_CACHE/jobs/scans/policies.json`. Each item is `download` (new or
-changed upstream), `unchanged`, or `unsupported`. Unsupported items are
-never downloaded. The scan compares against the operator checkout and needs
-no write access.
+The command prints totals, counts per MIME type and per folder, eligible
+counts per circle, and how many documents are held. The listing is
+`kanon/ingest-scan/v2`. A v1 scan is refused. Sharing is re-read every
+run; Gemini meeting notes are often shared with the whole invite list, so
+sharing alone rarely admits a note to team.
 
 Then download from that listing:
 

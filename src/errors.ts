@@ -63,3 +63,27 @@ export function unsupportedFormat(message: string): RailError<'unsupported_forma
 export function jobLocked(message: string): RailError<'job_locked'> {
   return railError('job_locked', message, { retryable: true });
 }
+
+/** The remote is readable by someone who is not a declared member. */
+export function audienceTooWide(message: string): RailError<'audience_too_wide'> {
+  return railError('audience_too_wide', message);
+}
+
+/** The host audience could not be verified. */
+export function audienceUnverified(message: string): RailError<'audience_unverified'> {
+  return railError('audience_unverified', message);
+}
+
+export function promotionDenied(message: string): RailError<'promotion_denied'> {
+  return railError('promotion_denied', message);
+}
+
+export function scorerFailed(message: string): RailError<'scorer_failed'> {
+  return railError('scorer_failed', message, { retryable: true });
+}
+
+export function scorerAuthRequired(scorerId: string): RailError<'scorer_auth_required'> {
+  return railError('scorer_auth_required', `Scorer ${scorerId} needs credentials`, {
+    nextStep: `Run kanon scorer add ${scorerId}`,
+  });
+}

@@ -38,6 +38,11 @@ grants:
   - project: my-app
     indexes:
       - team
+people:
+  - { id: operator, google: [operator@example.test] }
+domains: [example.test]
+circles:
+  - { id: me, source: 93ebd59e-d353-4c6b-9b35-6724937abf40, members: [operator], ceiling: 3, admit: auto }
 connectors:
   - id: team-drive
     kind: google-drive
@@ -45,7 +50,7 @@ connectors:
 ingest:
   - id: policies
     connector: team-drive
-    source: 93ebd59e-d353-4c6b-9b35-6724937abf40
+    route: [me]                 # widest first; ingest[].source is rejected
     folder: 1AbCdEfGhIjKlMnOp   # Drive folder id, read recursively
     target: docs/policies       # inside a kanon.yml root
     schedule: weekly            # off | hourly | daily (default) | weekly
@@ -72,8 +77,9 @@ ingest:
 - A connector holds no secrets here. Credentials live in
   `$KANON_HOME/credentials/<id>.json` with mode `0600`, written by
   `kanon connector add` and `kanon connector auth`.
-- An ingest job must point at a known connector and at a managed source with
-  `access: write` and a remote.
+- An ingest job must point at a known connector and at a `route` of
+  circles. Each circle source is a managed write source with a remote.
+  `kanon.yml` cannot declare people, circles or routes.
 - `target` is relative, has no `..`, and must sit inside a root declared by
   the source's `kanon.yml`. Targets are unique per source; the job owns the
   files it writes there.
@@ -101,5 +107,6 @@ sync this file between machines.
 QMD files, catalogues and job state live under the cache directory
 (`$KANON_CACHE`), not in Git: `jobs/state.json`, `jobs/tick.lock`,
 `jobs/runs/` (last 50 tick reports), `jobs/logs/tick.log`,
-`jobs/scans/<job-id>.json` (the latest `kanon ingest scan`) and temporary
-`jobs/worktrees/`.
+`jobs/scans/<job-id>.json` (the latest `kanon ingest scan`),
+`jobs/staging/` (mode `0700`) and temporary `jobs/worktrees/`. The review
+ledger is `$KANON_HOME/reviews/<job>.jsonl` (mode `0600`).

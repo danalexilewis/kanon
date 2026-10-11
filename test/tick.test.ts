@@ -11,6 +11,7 @@ import { acquireTickLock, loadJobState } from '../src/jobs/state.js';
 import { jobsStatus } from '../src/jobs/status.js';
 import { runTick, type TickDeps } from '../src/jobs/tick.js';
 import { createSourceRemote } from './git-helpers.js';
+import { OPERATOR_PERSON, soloCircle } from './helpers.js';
 import { testRoot } from './setup.js';
 
 const T0 = new Date('2026-10-11T02:00:00.000Z');
@@ -56,14 +57,16 @@ function tickConfig(sourceId: string, path: string, remote: string): MachineConf
     indexes: [{ id: 'tick-idx', sources: [sourceId] }],
     projects: [],
     grants: [],
+    people: [OPERATOR_PERSON],
+    circles: [soloCircle(sourceId)],
     connectors: [
       { id: 'fake', kind: 'google-drive', auth: 'oauth' },
       { id: 'nocreds', kind: 'google-drive', auth: 'oauth' },
     ],
     ingest: [
-      { id: 'here', connector: 'fake', source: sourceId, folder: 'f-here', target: 'docs/here', device: 'laptop' },
-      { id: 'elsewhere', connector: 'fake', source: sourceId, folder: 'f-desk', target: 'docs/elsewhere', device: 'desk' },
-      { id: 'unassigned', connector: 'nocreds', source: sourceId, folder: 'f-any', target: 'docs/unassigned' },
+      { id: 'here', connector: 'fake', route: ['me'], folder: 'f-here', target: 'docs/here', device: 'laptop' },
+      { id: 'elsewhere', connector: 'fake', route: ['me'], folder: 'f-desk', target: 'docs/elsewhere', device: 'desk' },
+      { id: 'unassigned', connector: 'nocreds', route: ['me'], folder: 'f-any', target: 'docs/unassigned' },
     ],
   };
 }

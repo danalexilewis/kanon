@@ -1,6 +1,7 @@
 import type { Result } from 'neverthrow';
 
 import type { RailError } from '@eddy-works/never-rest';
+import type { SharingSnapshot } from '../circles/types.js';
 
 /** Formats a connector can hand over. Converters for docx, pdf, etc. come later. */
 export type ConnectorFormat = 'markdown';
@@ -38,4 +39,9 @@ export interface Connector {
     item: ConnectorItem,
     format: ConnectorFormat,
   ) => Promise<Result<string, ConnectorError | RailError<'unsupported_format'>>>;
+  readonly sharing?: (
+    item: ConnectorItem,
+  ) => Promise<Result<SharingSnapshot, ConnectorError>>;
+  readonly canShare?: (item: ConnectorItem) => Promise<Result<boolean, ConnectorError>>;
+  readonly account?: () => Promise<Result<string, ConnectorError>>;
 }

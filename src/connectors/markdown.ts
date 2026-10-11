@@ -3,6 +3,7 @@ import { posix } from 'node:path';
 
 import { stringify as stringifyYaml } from 'yaml';
 
+import type { DocumentAccess } from '../config/schemas.js';
 import type { ConnectorItem } from './types.js';
 
 /** Namespace for ingested document ids (UUID v5). Never change it. */
@@ -132,6 +133,7 @@ export function renderIngestedDocument(input: {
   readonly sourceId: string;
   readonly body: string;
   readonly vars?: Record<string, unknown>;
+  readonly access?: DocumentAccess;
 }): string {
   const frontmatter = {
     schema: 'eddy-kb/document/v1',
@@ -142,6 +144,7 @@ export function renderIngestedDocument(input: {
       sources: [
         { uri: input.item.uri, revision: input.item.revision, relation: 'exported-from' },
       ],
+      ...(input.access !== undefined ? { access: input.access } : {}),
     },
     ...(input.vars !== undefined ? { vars: input.vars } : {}),
   };

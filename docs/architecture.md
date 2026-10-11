@@ -49,12 +49,12 @@ config and job state, and runs whatever is due:
   fast-forward when the head moved. Local sources are rescanned and compared
   with the index catalogue by path and content hash; they are never fetched.
 - **Ingest** (jobs for this device). A connector lists and reads Markdown.
-  Kanon mirrors it into the job's target in a temporary `git worktree` at
-  the remote tip, validates the source, commits and pushes fast-forward. The
-  operator's checkout then catches up by fast-forward. See
-  [ADR 0006](./decisions/0006-connectors-land-as-markdown-in-git.md).
-  By hand, ingest is two steps: `kanon ingest scan` lists without
-  downloading and saves the listing, then `kanon ingest run --from-scan`
+  Each document is placed in one circle on the job's `route`, then mirrored
+  into that circle's worktree, committed and pushed only after an audience
+  check. See [ADR 0006](./decisions/0006-connectors-land-as-markdown-in-git.md)
+  and [ADR 0008](./decisions/0008-circles-of-trust.md).
+  By hand, ingest is two steps: `kanon ingest scan` lists sharing and
+  eligible circles without downloading, then `kanon ingest run --from-scan`
   downloads from it, optionally in batches.
 
 Each affected index is rebuilt once per tick. Cadence lives only in config,
@@ -72,10 +72,10 @@ flowchart TD
   Refresh --> Rebuild["rebuild each affected index once"]
 ```
 
-Connectors are plain objects of functions (`list`, `read`) behind
-`createConnector`. Google Drive is the only kind today. Items without a
-Markdown form are skipped as `unsupported_format`; that is where converters
-and other stores plug in.
+Connectors are plain objects of functions (`list`, `read`, and optionally
+`sharing`, `canShare`, `account`) behind `createConnector`. Google Drive is
+the only kind today. Items without a Markdown form are skipped as
+`unsupported_format`; that is where converters and other stores plug in.
 
 ## Search modes
 

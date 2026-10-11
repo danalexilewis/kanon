@@ -16,11 +16,22 @@ import { createGoogleDriveConnector } from '../src/connectors/google-drive/index
 import { ingestDocId } from '../src/connectors/markdown.js';
 import { runIngest } from '../src/jobs/ingest.js';
 import { createSourceRemote, git } from './git-helpers.js';
+import { OPERATOR_PERSON, soloCircle } from './helpers.js';
 
 const DOC = 'application/vnd.google-apps.document';
 const FOLDER = 'application/vnd.google-apps.folder';
 const TOKEN = 'ya29.secret-token';
 const PNG = Buffer.from('drive-png').toString('base64');
+
+interface FakePermission {
+  readonly type: 'user' | 'group' | 'domain' | 'anyone';
+  readonly emailAddress?: string;
+  readonly domain?: string;
+  readonly allowFileDiscovery?: boolean;
+  readonly deleted?: boolean;
+  readonly expirationTime?: string;
+  readonly view?: string;
+}
 
 interface FakeFile {
   readonly id: string;
@@ -29,6 +40,9 @@ interface FakeFile {
   readonly parents: readonly string[];
   readonly version?: string;
   readonly content?: string;
+  readonly permissions?: readonly FakePermission[];
+  readonly canShare?: boolean;
+  readonly permissionStatus?: number;
 }
 
 function json(body: unknown, status = 200): Response {
@@ -63,6 +77,26 @@ function fakeDrive(files: readonly FakeFile[]) {
         ...(offset + 2 < children.length ? { nextPageToken: String(offset + 2) } : {}),
       });
     }
+    if (url.pathname === '/drive/v3/about') {
+      return json({ user: { emailAddress: 'operator@example.test' } });
+    }
+    const permissions = /^\/drive\/v3\/files\/([^/]+)\/permissions$/.exec(url.pathname);
+    if (permissions !== null) {
+      const file = files.find((entry) => entry.id === decodeURIComponent(permissions[1] ?? ''));
+      if (file === undefined) {
+        return json({ error: { message: 'File not found' } }, 404);
+      }
+      if (file.permissionStatus !== undefined) {
+        return json({ error: { message: 'Forbidden' } }, file.permissionStatus);
+      }
+      const all = file.permissions ?? [];
+      const offset = Number(url.searchParams.get('pageToken') ?? 0);
+      const page = all.slice(offset, offset + 2);
+      return json({
+        permissions: page,
+        ...(offset + 2 < all.length ? { nextPageToken: String(offset + 2) } : {}),
+      });
+    }
     const exported = /^\/drive\/v3\/files\/([^/]+)\/export$/.exec(url.pathname);
     const media = /^\/drive\/v3\/files\/([^/]+)$/.exec(url.pathname);
     const id = decodeURIComponent((exported ?? media)?.[1] ?? '');
@@ -75,6 +109,9 @@ function fakeDrive(files: readonly FakeFile[]) {
     }
     if (media !== null && url.searchParams.get('alt') === 'media') {
       return new Response(file.content ?? '');
+    }
+    if (media !== null && url.searchParams.get('fields')?.includes('capabilities')) {
+      return json({ capabilities: { canShare: file.canShare === true } });
     }
     return json({ error: { message: 'Bad request' } }, 400);
   }) as typeof fetch;
@@ -257,6 +294,50 @@ describe('google drive connector', () => {
     }
   });
 
+  it('pages permissions, reports partial sharing on 403, and ignores unusable grants', async () => {
+    const drive = fakeDrive([
+      {
+        id: 'doc-shared',
+        name: 'Shared',
+        mimeType: DOC,
+        parents: ['root'],
+        permissions: [
+          { type: 'user', emailAddress: 'cofounder@example.test' },
+          { type: 'user', emailAddress: 'gone@example.test', deleted: true },
+          { type: 'user', emailAddress: 'old@example.test', expirationTime: '2020-01-01T00:00:00.000Z' },
+          { type: 'user', emailAddress: 'meta@example.test', view: 'metadata' },
+          { type: 'anyone', allowFileDiscovery: false },
+          { type: 'group', emailAddress: 'eng@example.test' },
+          { type: 'user', emailAddress: 'guest@other.test' },
+        ],
+        canShare: true,
+      },
+      {
+        id: 'doc-hidden',
+        name: 'Hidden',
+        mimeType: DOC,
+        parents: ['root'],
+        permissionStatus: 403,
+      },
+    ]);
+    const connector = connectorFor(drive);
+    const items = (await connector.list({ folder: 'root' }))._unsafeUnwrap();
+    const shared = items.find((item) => item.externalId === 'doc-shared')!;
+    const hidden = items.find((item) => item.externalId === 'doc-hidden')!;
+
+    const snapshot = (await connector.sharing!(shared))._unsafeUnwrap();
+    expect(snapshot.sharing).toBe('full');
+    expect(snapshot.grants).toHaveLength(7);
+    expect((await connector.canShare!(shared))._unsafeUnwrap()).toBe(true);
+    expect((await connector.account!())._unsafeUnwrap()).toBe('operator@example.test');
+
+    const hiddenShare = (await connector.sharing!(hidden))._unsafeUnwrap();
+    expect(hiddenShare).toEqual({ grants: [], sharing: 'partial' });
+    const permCalls = drive.calls.filter((url) => url.pathname.endsWith('/permissions'));
+    expect(permCalls[0]?.searchParams.get('fields')).toContain('allowFileDiscovery');
+    expect(permCalls[0]?.searchParams.get('supportsAllDrives')).toBe('true');
+  });
+
   it('ingests a Drive folder into git with stable ids, provenance and extracted images', async () => {
     const id = 'b0000000-0000-4000-8000-000000000001';
     const remote = await createSourceRemote('drive-e2e', id);
@@ -278,8 +359,10 @@ describe('google drive connector', () => {
       indexes: [],
       projects: [],
       grants: [],
+      people: [OPERATOR_PERSON],
+      circles: [soloCircle(id)],
       connectors: [{ id: 'gd', kind: 'google-drive', auth: 'oauth' }],
-      ingest: [{ id: 'drive', connector: 'gd', source: id, folder: 'root', target: 'docs/drive' }],
+      ingest: [{ id: 'drive', connector: 'gd', route: ['me'], folder: 'root', target: 'docs/drive' }],
     };
 
     const report = await runIngest(config, 'drive', {}, { connectorFor: async () => ok(connectorFor(drive)) });

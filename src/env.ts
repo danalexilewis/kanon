@@ -84,3 +84,15 @@ export function ingestScanPath(jobId: string): string {
 export function worktreeDir(jobId: string): string {
   return join(jobsDir(), 'worktrees', jobId);
 }
+
+export function stagingDir(jobId: string): string {
+  return join(jobsDir(), 'staging', jobId);
+}
+
+export function reviewsDir(): string {
+  return join(kanonHome(), 'reviews');
+}
+
+export function reviewLedgerPath(jobId: string): string {
+  return join(reviewsDir(), `${jobId}.jsonl`);
+}
