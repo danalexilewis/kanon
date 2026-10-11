@@ -20,11 +20,17 @@ These notes describe the current tree. They are not a spec.
 | How do I add a source? | [docs/guides/add-a-source.md](docs/guides/add-a-source.md) |
 | How do I search? | [docs/guides/search.md](docs/guides/search.md) |
 | How do agents connect? | [docs/guides/mcp.md](docs/guides/mcp.md) |
+| How do scheduled refresh and ingest work? | [docs/guides/scheduled-jobs.md](docs/guides/scheduled-jobs.md) |
+| How do I connect Google Drive? | [docs/guides/google-drive.md](docs/guides/google-drive.md) |
+| How do jobs run across devices? | [docs/guides/multiple-devices.md](docs/guides/multiple-devices.md) |
 | Why rewrite in place? | [docs/decisions/0001-rewrite-in-place.md](docs/decisions/0001-rewrite-in-place.md) |
 | Why pin QMD 2.8.3? | [docs/decisions/0002-pinned-qmd-sdk.md](docs/decisions/0002-pinned-qmd-sdk.md) |
 | Why is an index the unit of access? | [docs/decisions/0003-index-is-unit-of-access.md](docs/decisions/0003-index-is-unit-of-access.md) |
 | What does a project ID prove? | [docs/decisions/0004-local-project-identity.md](docs/decisions/0004-local-project-identity.md) |
+| Why do connectors write Markdown to Git? | [docs/decisions/0006-connectors-land-as-markdown-in-git.md](docs/decisions/0006-connectors-land-as-markdown-in-git.md) |
+| How is write access checked? | [docs/decisions/0007-write-access-is-probed.md](docs/decisions/0007-write-access-is-probed.md) |
 | Current implementation plan | [plans/20261011-kanon-v2-local-first.md](plans/20261011-kanon-v2-local-first.md) |
+| Scheduled sync and connectors plan | [plans/20261011-scheduled-sync-and-connectors.md](plans/20261011-scheduled-sync-and-connectors.md) |
 | Source review | [docs/background/never-rest-local-knowledge-review-2026-10-11.md](docs/background/never-rest-local-knowledge-review-2026-10-11.md) |
 
 ## Coding conventions

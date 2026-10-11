@@ -16,11 +16,17 @@ export interface CatalogueEntry {
   readonly title: string | undefined;
 }
 
+export interface CatalogueSource {
+  readonly gitCommit: string | undefined;
+}
+
 export interface Catalogue {
   readonly generation: number;
   readonly updatedAt: string;
   readonly indexId: string;
   readonly qmdPackage: string;
+  /** Commit each source was indexed at, including sources with no documents. */
+  readonly sources?: Readonly<Record<string, CatalogueSource>>;
   readonly entries: readonly CatalogueEntry[];
 }
 
@@ -28,12 +34,14 @@ export function buildCatalogue(
   indexId: string,
   generation: number,
   documents: readonly (KnowledgeDocument & { readonly gitCommit?: string })[],
+  sources: Readonly<Record<string, CatalogueSource>> = {},
 ): Catalogue {
   return {
     generation,
     updatedAt: new Date().toISOString(),
     indexId,
     qmdPackage: '2.8.3',
+    sources,
     entries: documents.map((document) => ({
       uri: document.uri,
       sourceId: document.sourceId,

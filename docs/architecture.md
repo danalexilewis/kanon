@@ -38,6 +38,42 @@ QMD cannot see an ungranted index.
 
 HTTP is deferred.
 
+## Scheduled jobs
+
+The operating system fires `kanon tick` every hour (a launchd LaunchAgent on
+macOS, a systemd user timer on Linux). Each tick takes a lock, reads machine
+config and job state, and runs whatever is due:
+
+- **Refresh** (every source with `refresh` other than `off`). Managed
+  sources run `git ls-remote` against the configured remote and
+  fast-forward when the head moved. Local sources are rescanned and compared
+  with the index catalogue by path and content hash; they are never fetched.
+- **Ingest** (jobs for this device). A connector lists and reads Markdown.
+  Kanon mirrors it into the job's target in a temporary `git worktree` at
+  the remote tip, validates the source, commits and pushes fast-forward. The
+  operator's checkout then catches up by fast-forward. See
+  [ADR 0006](./decisions/0006-connectors-land-as-markdown-in-git.md).
+
+Each affected index is rebuilt once per tick. Cadence lives only in config,
+so changing it needs no reinstall. Jobs are reachable through the CLI and
+SDK only.
+
+```mermaid
+flowchart TD
+  Timer["launchd / systemd (hourly)"] --> Tick["kanon tick"]
+  Tick --> Refresh["refresh due sources"]
+  Tick --> Ingest["ingest due jobs for this device"]
+  Ingest --> Worktree["worktree at remote tip"]
+  Worktree --> Push["commit + push (no force)"]
+  Push --> Refresh
+  Refresh --> Rebuild["rebuild each affected index once"]
+```
+
+Connectors are plain objects of functions (`list`, `read`) behind
+`createConnector`. Google Drive is the only kind today. Items without a
+Markdown form are skipped as `unsupported_format`; that is where converters
+and other stores plug in.
+
 ## Search modes
 
 `lexical`, `semantic`, and `hybrid`. The mode actually used is returned on

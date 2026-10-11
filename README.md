@@ -38,6 +38,16 @@ pnpm kanon mcp-config my-app
 pnpm kanon mcp --project my-app
 ```
 
+Scheduled refresh and ingest (see [docs/guides/scheduled-jobs.md](docs/guides/scheduled-jobs.md)):
+
+```bash
+pnpm kanon schedule install
+pnpm kanon jobs status
+pnpm kanon connector add team-drive --kind google-drive --client-secret client.json
+pnpm kanon connector auth team-drive
+pnpm kanon ingest run policies --dry-run
+```
+
 ## Layout
 
 | Path | Purpose |
@@ -45,7 +55,9 @@ pnpm kanon mcp --project my-app
 | `src/contracts` | never-rest operation contract |
 | `src/core` | identity, URIs, scope, hashes |
 | `src/config` | manifests and machine config |
-| `src/sources` | Git sync |
+| `src/sources` | Git sync and write probes |
+| `src/jobs` | refresh, ingest, tick, OS scheduler |
+| `src/connectors` | connector interface and Google Drive |
 | `src/retrieval` | QMD adapter and index jobs |
 | `src/cli` | standalone CLI |
 | `src/mcp` | optional MCP process |

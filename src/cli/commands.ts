@@ -4,12 +4,17 @@ import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 import { loadAppContext } from '../app/handlers.js';
+import { initDevice } from '../config/device.js';
 import {
   initMachineConfig,
   loadMachineConfig,
   saveMachineConfig,
 } from '../config/machine.js';
-import { emptyMachineConfig, type MachineConfig } from '../config/schemas.js';
+import {
+  emptyMachineConfig,
+  type MachineConfig,
+  type MachineSource,
+} from '../config/schemas.js';
 import {
   assertRootsContained,
   loadSourceManifest,
@@ -17,10 +22,20 @@ import {
 } from '../config/source-manifest.js';
 import { configPath } from '../env.js';
 import { OPERATOR } from '../core/principal.js';
+import { jobConfigIssues } from '../jobs/doctor.js';
 import { updateIndex } from '../retrieval/index-job.js';
 import { syncSources } from '../sources/sync.js';
 import { knowledgeClient } from './client.js';
+import { dispatchJobCli } from './job-commands.js';
 import { flagBool, flagString, type ParsedCli } from './parse.js';
+import {
+  assertWriteAccess,
+  parseAccessFlag,
+  parseCadenceFlag,
+  printJson,
+  requireConfig,
+  validatedConfig,
+} from './shared.js';
 
 const SOURCE_TEMPLATE = `schema: kanon/source/v1
 id: ${'SOURCE_ID'}
@@ -32,21 +47,17 @@ exclude:
   - history/**
 `;
 
-function printJson(value: unknown): void {
-  process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
-}
-
-async function requireConfig(): Promise<MachineConfig> {
-  const loaded = await loadMachineConfig();
-  if (loaded.isErr()) {
-    throw new Error(loaded.error.message);
-  }
-  return loaded.value;
-}
-
 async function cmdInit(): Promise<void> {
   const config = await initMachineConfig();
-  printJson({ home: configPath(), sources: config.sources.length });
+  const device = await initDevice();
+  if (device.isErr()) {
+    throw new Error(device.error.message);
+  }
+  printJson({
+    home: configPath(),
+    sources: config.sources.length,
+    device: device.value.name,
+  });
 }
 
 async function cmdSourceInit(cli: ParsedCli): Promise<void> {
@@ -85,15 +96,23 @@ async function cmdSourceAdd(cli: ParsedCli): Promise<void> {
   if (config.sources.some((source) => source.id === manifest.value.id)) {
     throw new Error('Source id is already registered');
   }
-  config.sources.push({
+  const access = parseAccessFlag(cli);
+  const refresh = parseCadenceFlag(cli, 'refresh');
+  const remote = flagString(cli.flags, 'remote');
+  const branch = flagString(cli.flags, 'branch');
+  const source: MachineSource = {
     id: manifest.value.id,
     kind,
     path,
-    remote: flagString(cli.flags, 'remote'),
-    branch: flagString(cli.flags, 'branch'),
-  });
-  await saveMachineConfig(config);
-  printJson({ id: manifest.value.id, kind, path });
+    ...(remote !== undefined ? { remote } : {}),
+    ...(branch !== undefined ? { branch } : {}),
+    ...(access !== undefined ? { access } : {}),
+    ...(refresh !== undefined ? { refresh } : {}),
+  };
+  const next = validatedConfig({ ...config, sources: [...config.sources, source] });
+  await assertWriteAccess(source);
+  await saveMachineConfig(next);
+  printJson({ id: manifest.value.id, kind, path, access: access ?? 'read' });
 }
 
 async function cmdSourceList(): Promise<void> {
@@ -210,6 +229,7 @@ async function cmdDoctor(): Promise<void> {
       issues.push(`${source.id}: ${contained.error.message}`);
     }
   }
+  issues.push(...(await jobConfigIssues(config.value)));
   printJson({ ok: issues.length === 0, issues });
 }
 
@@ -339,6 +359,9 @@ export async function dispatchCli(cli: ParsedCli): Promise<void> {
       throw new Error('mcp --project <id>');
     }
     await startMcpServer(project);
+    return;
+  }
+  if (await dispatchJobCli(cli)) {
     return;
   }
   process.stdout.write(`kanon ${cli.command}: unknown command\n`);

@@ -40,3 +40,42 @@ export function indexDbPath(indexId: string): string {
 export function cataloguePath(indexId: string): string {
   return join(indexDir(indexId), 'catalogue.json');
 }
+
+/** Device identity. Never synced between machines. */
+export function devicePath(): string {
+  return join(kanonHome(), 'device.yml');
+}
+
+/** Connector secrets, one `<connector-id>.json` per connector (mode 0600). */
+export function credentialsDir(): string {
+  return join(kanonHome(), 'credentials');
+}
+
+export function credentialsPath(connectorId: string): string {
+  return join(credentialsDir(), `${connectorId}.json`);
+}
+
+/** Scheduled job state, locks, run reports, and temporary worktrees. */
+export function jobsDir(): string {
+  return join(kanonCache(), 'jobs');
+}
+
+export function jobStatePath(): string {
+  return join(jobsDir(), 'state.json');
+}
+
+export function jobLockPath(): string {
+  return join(jobsDir(), 'tick.lock');
+}
+
+export function jobRunsDir(): string {
+  return join(jobsDir(), 'runs');
+}
+
+export function jobLogsDir(): string {
+  return join(jobsDir(), 'logs');
+}
+
+export function worktreeDir(jobId: string): string {
+  return join(jobsDir(), 'worktrees', jobId);
+}

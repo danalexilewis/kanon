@@ -7,6 +7,7 @@ import {
   loadCatalogue,
   saveCatalogue,
   type Catalogue,
+  type CatalogueSource,
 } from './catalogue.js';
 import { collectionsForIndex, openIndexStore } from './qmd-adapter.js';
 
@@ -37,12 +38,17 @@ export async function updateIndex(
   const documents: Array<KnowledgeDocument & { readonly gitCommit?: string }> =
     [];
   const manifests = new Map<string, LoadedManifest>();
+  const sourceCommits: Record<string, CatalogueSource> = {};
 
   for (const sourceId of index.sources) {
     const source = config.sources.find((entry) => entry.id === sourceId);
     if (source === undefined) {
       continue;
     }
+    const commit = (await gitIsRepo(source.path))
+      ? await gitHead(source.path)
+      : undefined;
+    sourceCommits[sourceId] = { gitCommit: commit };
     const manifestResult = await loadSourceManifest(source.path);
     if (manifestResult.isErr()) {
       continue;
@@ -55,15 +61,12 @@ export async function updateIndex(
     if (scanned.isErr()) {
       throw new Error(scanned.error.message);
     }
-    const commit = (await gitIsRepo(source.path))
-      ? await gitHead(source.path)
-      : undefined;
     for (const document of scanned.value) {
       documents.push({ ...document, gitCommit: commit });
     }
   }
 
-  const catalogue = buildCatalogue(indexId, generation, documents);
+  const catalogue = buildCatalogue(indexId, generation, documents, sourceCommits);
   await saveCatalogue(indexId, catalogue);
 
   const collections = collectionsForIndex(config, indexId, manifests);

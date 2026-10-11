@@ -27,3 +27,39 @@ export function syncBlocked(message: string): RailError<'sync_blocked'> {
 export function qmdUnavailable(message: string): RailError<'qmd_unavailable'> {
   return railError('qmd_unavailable', message);
 }
+
+export function remoteUnavailable(message: string): RailError<'remote_unavailable'> {
+  return railError('remote_unavailable', message, { retryable: true });
+}
+
+/** The operator's git credentials cannot open the remote for writing. */
+export function writeDenied(message: string): RailError<'write_denied'> {
+  return railError('write_denied', message, {
+    nextStep: 'Check push access to the remote, or set the source to access: read',
+  });
+}
+
+/** The remote refused the push (branch protection, hooks, or a moved tip). */
+export function pushRejected(message: string): RailError<'push_rejected'> {
+  return railError('push_rejected', message);
+}
+
+export function connectorFailed(message: string): RailError<'connector_failed'> {
+  return railError('connector_failed', message, { retryable: true });
+}
+
+export function connectorAuthRequired(
+  connectorId: string,
+): RailError<'connector_auth_required'> {
+  return railError('connector_auth_required', `Connector ${connectorId} needs credentials`, {
+    nextStep: `Run kanon connector auth ${connectorId}`,
+  });
+}
+
+export function unsupportedFormat(message: string): RailError<'unsupported_format'> {
+  return railError('unsupported_format', message);
+}
+
+export function jobLocked(message: string): RailError<'job_locked'> {
+  return railError('job_locked', message, { retryable: true });
+}

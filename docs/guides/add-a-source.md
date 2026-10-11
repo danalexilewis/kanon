@@ -26,3 +26,12 @@ pnpm kanon sync
 ```
 
 Dirty or diverged managed checkouts are left untouched and reported.
+
+To keep a source current on a schedule, or let ingest jobs push to it:
+
+```bash
+pnpm kanon source add --path ./checkout --kind managed --remote git@example.com:org/docs.git --access write --refresh daily
+```
+
+`--access write` is saved only after a dry-run push succeeds. See
+[Scheduled jobs](./scheduled-jobs.md).

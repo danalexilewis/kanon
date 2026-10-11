@@ -45,6 +45,14 @@ describe('MCP adapter', () => {
       client.connect(clientTransport),
     ]);
 
+    const tools = await client.listTools();
+    expect(tools.tools.map((tool) => tool.name).sort()).toEqual([
+      'get',
+      'listIndexes',
+      'search',
+      'status',
+    ]);
+
     const sdk = await knowledgeClient({ config, principal }).search({
       query: { query: 'release', index: 'team', mode: 'lexical', limit: 5 },
     });
