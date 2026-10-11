@@ -76,6 +76,11 @@ export function jobLogsDir(): string {
   return join(jobsDir(), 'logs');
 }
 
+/** The saved listing for an ingest job, written by `kanon ingest scan`. */
+export function ingestScanPath(jobId: string): string {
+  return join(jobsDir(), 'scans', `${jobId}.json`);
+}
+
 export function worktreeDir(jobId: string): string {
   return join(jobsDir(), 'worktrees', jobId);
 }

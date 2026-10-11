@@ -4,6 +4,7 @@ import { initDevice, loadDevice, renameDevice } from '../config/device.js';
 import { saveMachineConfig } from '../config/machine.js';
 import { ingestSchedule, ingestTarget, sourceRefresh, type MachineSource } from '../config/schemas.js';
 import { runIngest } from '../jobs/ingest.js';
+import { loadIngestScan, scanIngest, summarizeIngestScan } from '../jobs/ingest-scan.js';
 import {
   currentTickCommand,
   defaultLogPath,
@@ -207,14 +208,48 @@ async function cmdIngestList(): Promise<void> {
   );
 }
 
+function logProgress(line: string): void {
+  process.stderr.write(`${line}\n`);
+}
+
+function parseLimitFlag(cli: ParsedCli): number | undefined {
+  const value = flagString(cli.flags, 'limit');
+  if (value === undefined) {
+    return undefined;
+  }
+  const limit = Number(value);
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new Error('--limit must be a whole number of at least 1');
+  }
+  return limit;
+}
+
+async function cmdIngestScan(cli: ParsedCli): Promise<void> {
+  const id = cli.rest[0];
+  if (id === undefined) {
+    throw new Error('ingest scan <job-id>');
+  }
+  const config = await requireConfig();
+  const scan = await scanIngest(config, id, { log: logProgress });
+  if (scan.isErr()) {
+    throw new Error(scan.error.message);
+  }
+  printJson(summarizeIngestScan(scan.value));
+}
+
 async function cmdIngestRun(cli: ParsedCli): Promise<void> {
   const id = cli.rest[0];
   if (id === undefined) {
-    throw new Error('ingest run <job-id> [--dry-run] [--here]');
+    throw new Error('ingest run <job-id> [--from-scan] [--limit <n>] [--dry-run] [--here]');
   }
   const config = await requireConfig();
   if (!(config.ingest ?? []).some((job) => job.id === id)) {
     throw new Error('Unknown ingest job id');
+  }
+  const limit = parseLimitFlag(cli);
+  const scan = flagBool(cli.flags, 'from-scan') ? await loadIngestScan(id) : undefined;
+  if (scan !== undefined && scan.isErr()) {
+    throw new Error(scan.error.message);
   }
   const device = await loadDevice();
   const dryRun = flagBool(cli.flags, 'dry-run');
@@ -223,6 +258,9 @@ async function cmdIngestRun(cli: ParsedCli): Promise<void> {
       dryRun,
       here: flagBool(cli.flags, 'here'),
       ...(device.isOk() ? { deviceName: device.value.name } : {}),
+      ...(scan !== undefined ? { scan: scan.value } : {}),
+      ...(limit !== undefined ? { limit } : {}),
+      log: logProgress,
     });
     if (report.status === 'assigned_elsewhere' || dryRun) {
       return { report, indexes: [] };
@@ -263,6 +301,10 @@ export async function dispatchJobCli(cli: ParsedCli): Promise<boolean> {
   }
   if (cli.command === 'ingest' && (sub === 'list' || sub === undefined)) {
     await cmdIngestList();
+    return true;
+  }
+  if (cli.command === 'ingest' && sub === 'scan') {
+    await cmdIngestScan(shift(cli));
     return true;
   }
   if (cli.command === 'ingest' && sub === 'run') {

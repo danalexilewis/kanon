@@ -53,6 +53,9 @@ config and job state, and runs whatever is due:
   the remote tip, validates the source, commits and pushes fast-forward. The
   operator's checkout then catches up by fast-forward. See
   [ADR 0006](./decisions/0006-connectors-land-as-markdown-in-git.md).
+  By hand, ingest is two steps: `kanon ingest scan` lists without
+  downloading and saves the listing, then `kanon ingest run --from-scan`
+  downloads from it, optionally in batches.
 
 Each affected index is rebuilt once per tick. Cadence lives only in config,
 so changing it needs no reinstall. Jobs are reachable through the CLI and

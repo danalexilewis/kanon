@@ -10,6 +10,13 @@ export { updateIndex } from '../retrieval/index-job.js';
 export { startMcpServer } from '../mcp/serve.js';
 export { refreshSources, type RefreshResult, type SourceRefreshReport } from '../jobs/refresh.js';
 export { runIngest, type IngestDeps, type IngestReport } from '../jobs/ingest.js';
+export {
+  loadIngestScan,
+  scanIngest,
+  summarizeIngestScan,
+  type IngestScan,
+  type IngestScanSummary,
+} from '../jobs/ingest-scan.js';
 export { runTick, type TickReport } from '../jobs/tick.js';
 export { jobsStatus, type JobsStatus } from '../jobs/status.js';
 export { createConnector } from '../connectors/registry.js';

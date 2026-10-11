@@ -72,13 +72,41 @@ ingest:
     schedule: weekly
 ```
 
-Then try it:
+## Scan, then download
+
+Ingest runs in two steps. A scan lists the folder without downloading
+anything. It records each file's Drive id, Kanon `doc.id`, folder, MIME type
+and revision, and marks what a run would do:
 
 ```bash
 pnpm kanon doctor
-pnpm kanon ingest run policies --dry-run
-pnpm kanon ingest run policies
+pnpm kanon ingest scan policies
 ```
+
+The command prints totals, counts per MIME type and per folder, and the
+files a run would delete. The full listing is saved to
+`$KANON_CACHE/jobs/scans/policies.json`. Each item is `download` (new or
+changed upstream), `unchanged`, or `unsupported`. Unsupported items are
+never downloaded. The scan compares against the operator checkout and needs
+no write access.
+
+Then download from that listing:
+
+```bash
+pnpm kanon ingest run policies --from-scan --limit 20
+pnpm kanon ingest run policies --from-scan
+```
+
+`--from-scan` reuses the saved listing instead of listing Drive again. If
+the job's connector or folder has changed since the scan, the run refuses
+and asks for a new scan. `--limit` downloads at most that many changed
+documents, commits them, and leaves the rest for the next run; the report's
+`deferred` field says how many are left. Progress goes to stderr, one line
+per document. Scheduled ticks always list afresh.
+
+The layout under `target` is a read-out of Drive, not a design to protect.
+Change `folder` or `target` and scan again whenever the structure should
+change.
 
 ## What lands in Git
 

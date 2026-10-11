@@ -100,5 +100,6 @@ sync this file between machines.
 
 QMD files, catalogues and job state live under the cache directory
 (`$KANON_CACHE`), not in Git: `jobs/state.json`, `jobs/tick.lock`,
-`jobs/runs/` (last 50 tick reports), `jobs/logs/tick.log` and temporary
+`jobs/runs/` (last 50 tick reports), `jobs/logs/tick.log`,
+`jobs/scans/<job-id>.json` (the latest `kanon ingest scan`) and temporary
 `jobs/worktrees/`.

@@ -55,6 +55,8 @@ succeeds. `kanon doctor` re-probes and reports lost access.
 ```bash
 pnpm kanon refresh [<source-id>] [--force]
 pnpm kanon ingest list
+pnpm kanon ingest scan <job-id>
+pnpm kanon ingest run <job-id> --from-scan [--limit <n>]
 pnpm kanon ingest run <job-id> --dry-run
 pnpm kanon ingest run <job-id>
 pnpm kanon tick [--force]
@@ -62,7 +64,8 @@ pnpm kanon jobs status
 ```
 
 Manual runs share the tick lock and record their result, so the next tick
-does not repeat them straight away. `--force` ignores cadence.
+does not repeat them straight away. `--force` ignores cadence. `ingest scan`
+only reads, so it takes no lock and records nothing in job state.
 
 ## Reading results
 

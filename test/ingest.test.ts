@@ -9,6 +9,7 @@ import { ingestDocId } from '../src/connectors/markdown.js';
 import type { Connector, ConnectorFormat, ConnectorItem } from '../src/connectors/types.js';
 import { writeDenied } from '../src/errors.js';
 import { runIngest, type IngestDeps } from '../src/jobs/ingest.js';
+import { loadIngestScan, scanIngest } from '../src/jobs/ingest-scan.js';
 import { gitHead } from '../src/sources/git.js';
 import {
   cloneRemote,
@@ -357,5 +358,104 @@ describe('ingest pipeline', () => {
     const forced = await runIngest(deskConfig, 'job-0', { deviceName: 'desk', here: true }, deps(fake));
     expect(forced.status).toBe('unchanged');
     expect(await commitCount(remote)).toBe(2);
+  });
+});
+
+describe('two-step ingest', () => {
+  it('scans the structure without downloading, then runs from the scan', async () => {
+    const id = '80000000-0000-4000-8000-00000000000b';
+    const remote = await createSourceRemote('ingest-scan', id);
+    let docs: FakeDoc[] = [
+      { id: 'a1', title: 'Alpha', revision: '1', body: '# Alpha\n' },
+      { id: 'b2', title: 'Beta', revision: '1', body: '# Beta\n', dir: 'Meeting One' },
+      { id: 'v3', title: 'Recording', revision: '1', body: '', dir: 'Meeting One', formats: [] },
+    ];
+    const fake = fakeConnector(() => docs);
+    const config = ingestConfig(id, remote.clone, remote);
+
+    const scan = (await scanIngest(config, 'job-0', {}, deps(fake)))._unsafeUnwrap();
+    expect(scan.totals).toEqual({
+      items: 3,
+      folders: 2,
+      download: 2,
+      unchanged: 0,
+      unsupported: 1,
+      remove: 0,
+    });
+    expect(scan.folders).toEqual([
+      { path: '.', items: 1, download: 1, unchanged: 0, unsupported: 0 },
+      { path: 'Meeting One', items: 2, download: 1, unchanged: 0, unsupported: 1 },
+    ]);
+    expect(scan.items.map((item) => [item.externalId, item.action])).toEqual([
+      ['a1', 'download'],
+      ['b2', 'download'],
+      ['v3', 'unsupported'],
+    ]);
+    expect(scan.items[0]?.docId).toBe(ingestDocId(id, 'fake://a1'));
+    expect(fake.reads).toEqual([]);
+    expect((await loadIngestScan('job-0'))._unsafeUnwrap()).toEqual(scan);
+
+    const run = await runIngest(config, 'job-0', { scan }, deps(fake));
+    expect(run).toMatchObject({
+      status: 'pushed',
+      added: ['docs/imported/alpha.md', 'docs/imported/meeting-one/beta.md'],
+      deferred: 0,
+    });
+    expect(fake.lists.count).toBe(1);
+    expect(fake.reads).toEqual(['a1', 'b2']);
+
+    const again = (await scanIngest(config, 'job-0', {}, deps(fake)))._unsafeUnwrap();
+    expect(again.totals).toMatchObject({ download: 0, unchanged: 2, unsupported: 1, remove: 0 });
+    expect(again.items.find((item) => item.externalId === 'a1')?.path).toBe('alpha.md');
+
+    docs = docs.filter((doc) => doc.id !== 'a1');
+    const gone = (await scanIngest(config, 'job-0', {}, deps(fake)))._unsafeUnwrap();
+    expect(gone.remove).toEqual(['docs/imported/alpha.md']);
+    expect(fake.reads).toEqual(['a1', 'b2']);
+  });
+
+  it('refuses a scan taken for another folder', async () => {
+    const id = '80000000-0000-4000-8000-00000000000c';
+    const remote = await createSourceRemote('ingest-scan-moved', id);
+    const before = await remoteHead(remote);
+    const fake = fakeConnector(() => [{ id: 'a', title: 'A', revision: '1', body: '# A\n' }]);
+    const scan = (await scanIngest(ingestConfig(id, remote.clone, remote), 'job-0', {}, deps(fake)))._unsafeUnwrap();
+
+    const moved = ingestConfig(id, remote.clone, remote, [{ folder: 'elsewhere' }]);
+    const report = await runIngest(moved, 'job-0', { scan }, deps(fake));
+    expect(report.status).toBe('failed');
+    expect(report.detail).toContain('scan again');
+    expect(fake.reads).toEqual([]);
+    expect(await remoteHead(remote)).toBe(before);
+  });
+
+  it('downloads in batches with a limit and reports progress', async () => {
+    const id = '80000000-0000-4000-8000-00000000000d';
+    const remote = await createSourceRemote('ingest-limit', id);
+    const fake = fakeConnector(() => [
+      { id: 'a', title: 'A', revision: '1', body: '# A\n' },
+      { id: 'b', title: 'B', revision: '1', body: '# B\n' },
+      { id: 'c', title: 'C', revision: '1', body: '# C\n', dir: 'Later' },
+    ]);
+    const config = ingestConfig(id, remote.clone, remote);
+    const lines: string[] = [];
+
+    const first = await runIngest(config, 'job-0', { limit: 2, log: (line) => lines.push(line) }, deps(fake));
+    expect(first).toMatchObject({
+      status: 'pushed',
+      added: ['docs/imported/a.md', 'docs/imported/b.md'],
+      removed: [],
+      deferred: 1,
+    });
+    expect(lines).toEqual(
+      expect.arrayContaining(['Downloading 2 of 3 items (1 deferred)', '[1/2] A', '[2/2] B', 'Pushing to main']),
+    );
+
+    const second = await runIngest(config, 'job-0', { limit: 2 }, deps(fake));
+    expect(second).toMatchObject({ status: 'pushed', added: ['docs/imported/later/c.md'], deferred: 0 });
+    expect(fake.reads).toEqual(['a', 'b', 'c']);
+    expect(await remoteFiles(remote)).toEqual(
+      expect.arrayContaining(['docs/imported/a.md', 'docs/imported/b.md', 'docs/imported/later/c.md']),
+    );
   });
 });

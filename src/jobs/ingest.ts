@@ -1,13 +1,12 @@
 import { createHash } from 'node:crypto';
-import { lstat, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { dirname, join, posix } from 'node:path';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { dirname, posix } from 'node:path';
 
 import { err, ok, type Result } from 'neverthrow';
 
 import type { RailError } from '@eddy-works/never-rest';
 import { splitFrontmatter } from '../config/frontmatter.js';
 import {
-  documentDocSchema,
   ingestTarget,
   sourceBranch,
   type MachineConfig,
@@ -29,7 +28,6 @@ import { createConnector } from '../connectors/registry.js';
 import type { Connector, ConnectorItem } from '../connectors/types.js';
 import { scanSourceDocuments } from '../core/documents.js';
 import { worktreeDir } from '../env.js';
-import { invalidConfig } from '../errors.js';
 import { probeSourceWrite } from '../sources/access.js';
 import {
   gitFetchBranch,
@@ -41,8 +39,9 @@ import {
   runGit,
 } from '../sources/git.js';
 import { remoteUrl } from '../sources/sync.js';
+import { scannedItems, type IngestScan } from './ingest-scan.js';
 import { refreshManagedSource, type SourceRefreshReport } from './refresh.js';
-import { resolveIngestTarget } from './target.js';
+import { readTargetFiles, resolveIngestTarget, toFs, type OwnedFile } from './target.js';
 
 export type IngestStatus =
   | 'pushed'
@@ -69,6 +68,8 @@ export interface IngestReport {
   readonly updated: readonly string[];
   readonly removed: readonly string[];
   readonly skipped: readonly IngestSkip[];
+  /** Changed items left for a later run because of `limit`. */
+  readonly deferred: number;
   readonly commit?: string;
   readonly detail?: string;
   /** The operator checkout's fast-forward after a successful push. */
@@ -91,20 +92,12 @@ export interface IngestOptions {
   /** Run even though the job is assigned to another device. */
   readonly here?: boolean;
   readonly deviceName?: string;
-}
-
-interface OwnedFile {
-  readonly uri: string;
-  readonly revision: string | undefined;
-  /** Relative to the job target. */
-  readonly path: string;
-  readonly content: string;
-}
-
-interface TargetScan {
-  readonly owned: ReadonlyMap<string, OwnedFile>;
-  /** Every existing file path under the target, owned or not. */
-  readonly paths: ReadonlySet<string>;
+  /** Use this saved listing instead of listing the connector again. */
+  readonly scan?: IngestScan;
+  /** Download at most this many changed items; the rest wait for the next run. */
+  readonly limit?: number;
+  /** Progress lines, one per stage and per download. */
+  readonly log?: (line: string) => void;
 }
 
 interface MirrorChanges {
@@ -112,64 +105,12 @@ interface MirrorChanges {
   readonly updated: readonly string[];
   readonly removed: readonly string[];
   readonly skipped: readonly IngestSkip[];
+  readonly deferred: number;
 }
 
 type ReadResult = Awaited<ReturnType<Connector['read']>>;
 
 const MAX_PUSH_ATTEMPTS = 2;
-
-function toFs(root: string, relative: string): string {
-  return relative === '' ? root : join(root, ...relative.split('/'));
-}
-
-/** Walk the job target. Any symlink fails the run; ingest never writes through one. */
-async function scanTarget(
-  targetAbs: string,
-  scheme: string,
-): Promise<Result<TargetScan, RailError<'invalid_config'>>> {
-  const owned = new Map<string, OwnedFile>();
-  const paths = new Set<string>();
-
-  async function walk(relative: string): Promise<Result<void, RailError<'invalid_config'>>> {
-    let entries: string[];
-    try {
-      entries = await readdir(toFs(targetAbs, relative));
-    } catch {
-      return ok(undefined);
-    }
-    for (const name of entries.sort()) {
-      const child = relative === '' ? name : `${relative}/${name}`;
-      const stats = await lstat(toFs(targetAbs, child));
-      if (stats.isSymbolicLink()) {
-        return err(invalidConfig(`Ingest target contains a symlink: ${child}`));
-      }
-      if (stats.isDirectory()) {
-        const nested = await walk(child);
-        if (nested.isErr()) {
-          return nested;
-        }
-        continue;
-      }
-      paths.add(child);
-      if (!child.endsWith('.md')) {
-        continue;
-      }
-      const content = await readFile(toFs(targetAbs, child), 'utf8');
-      const data = splitFrontmatter(content).data as { doc?: unknown } | undefined;
-      const doc = documentDocSchema.safeParse(data?.doc);
-      const ref = doc.success
-        ? doc.data.sources?.find((source) => source.uri.startsWith(`${scheme}://`))
-        : undefined;
-      if (ref !== undefined) {
-        owned.set(ref.uri, { uri: ref.uri, revision: ref.revision, path: child, content });
-      }
-    }
-    return ok(undefined);
-  }
-
-  const walked = await walk('');
-  return walked.isErr() ? err(walked.error) : ok({ owned, paths });
-}
 
 function choosePath(
   item: ConnectorItem,
@@ -212,6 +153,8 @@ async function mirrorIntoWorktree(args: {
   readonly connector: Connector;
   readonly items: readonly ConnectorItem[];
   readonly read: (item: ConnectorItem) => Promise<ReadResult>;
+  readonly limit?: number;
+  readonly log: (line: string) => void;
 }): Promise<Result<MirrorChanges, RailError<'invalid_config'>>> {
   const manifest = await loadSourceManifest(args.worktree);
   if (manifest.isErr()) {
@@ -222,11 +165,11 @@ async function mirrorIntoWorktree(args: {
   if (targetAbs.isErr()) {
     return err(targetAbs.error);
   }
-  const scan = await scanTarget(targetAbs.value, args.connector.scheme);
-  if (scan.isErr()) {
-    return err(scan.error);
+  const files = await readTargetFiles(targetAbs.value, args.connector.scheme);
+  if (files.isErr()) {
+    return err(files.error);
   }
-  const { owned, paths } = scan.value;
+  const { owned, paths } = files.value;
   const ownedPaths = new Set([...owned.values()].map((file) => file.path));
   const reserved = new Set([...paths].filter((path) => !ownedPaths.has(path)));
 
@@ -243,6 +186,13 @@ async function mirrorIntoWorktree(args: {
     const rightOwned = owned.has(right.uri) ? 0 : 1;
     return leftOwned - rightOwned || left.externalId.localeCompare(right.externalId);
   });
+  const changed = ordered.filter(
+    (item) => item.formats.includes('markdown') && owned.get(item.uri)?.revision !== item.revision,
+  ).length;
+  const planned = args.limit === undefined ? changed : Math.min(args.limit, changed);
+  let reads = 0;
+  let deferred = 0;
+  args.log(`Downloading ${planned} of ${ordered.length} items${planned < changed ? ` (${changed - planned} deferred)` : ''}`);
 
   function keepPrior(prior: OwnedFile | undefined): void {
     if (prior === undefined) {
@@ -266,6 +216,13 @@ async function mirrorIntoWorktree(args: {
       keepPrior(prior);
       continue;
     }
+    if (args.limit !== undefined && reads >= args.limit) {
+      deferred += 1;
+      keepPrior(prior);
+      continue;
+    }
+    reads += 1;
+    args.log(`[${reads}/${Math.max(planned, reads)}] ${item.relativeDir === '' ? '' : `${item.relativeDir}/`}${item.title}`);
 
     const read = await args.read(item);
     if (read.isErr()) {
@@ -335,7 +292,7 @@ async function mirrorIntoWorktree(args: {
   if (validated.isErr()) {
     return err(validated.error);
   }
-  return ok({ added, updated, removed, skipped });
+  return ok({ added, updated, removed, skipped, deferred });
 }
 
 async function gitIdentity(
@@ -384,7 +341,8 @@ export async function runIngest(
   deps: IngestDeps = {},
 ): Promise<IngestReport> {
   const job = (config.ingest ?? []).find((entry) => entry.id === jobId);
-  const empty = { attempts: 0, added: [], updated: [], removed: [], skipped: [], indexes: [] };
+  const empty = { attempts: 0, added: [], updated: [], removed: [], skipped: [], deferred: 0, indexes: [] };
+  const log = options.log ?? (() => undefined);
   if (job === undefined) {
     return { jobId, sourceId: '', status: 'failed', detail: 'Unknown ingest job', ...empty };
   }
@@ -420,7 +378,18 @@ export async function runIngest(
   if (probe.isErr()) {
     return fail('write_denied', probe.error.message);
   }
-  const listed = await connector.value.list({ folder: job.folder });
+  if (options.scan !== undefined && (options.scan.folder !== job.folder || options.scan.connector !== job.connector)) {
+    return fail('failed', `Scan for ${jobId} does not match the job's connector and folder; scan again`);
+  }
+  if (options.scan === undefined) {
+    log(`Listing ${job.connector} folder ${job.folder}`);
+  } else {
+    log(`Using the scan from ${options.scan.scannedAt}`);
+  }
+  const listed =
+    options.scan === undefined
+      ? await connector.value.list({ folder: job.folder })
+      : ok(scannedItems(options.scan));
   if (listed.isErr()) {
     return fail('failed', listed.error.message);
   }
@@ -461,6 +430,8 @@ export async function runIngest(
         connector: connector.value,
         items: listed.value,
         read,
+        ...(options.limit !== undefined ? { limit: options.limit } : {}),
+        log,
       });
       if (changes.isErr()) {
         return { ...fail('failed', changes.error.message), attempts: attempt };
@@ -496,6 +467,7 @@ export async function runIngest(
       const commitSha = await gitHead(dir);
 
       await deps.beforePush?.(attempt);
+      log(`Pushing to ${branch}`);
       const pushed = await gitPush(dir, url, branch);
       if (pushed.status === 'pushed') {
         const checkout = await refreshManagedSource(config, source);

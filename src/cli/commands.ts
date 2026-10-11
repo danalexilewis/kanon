@@ -288,7 +288,51 @@ async function cmdStatus(): Promise<void> {
   printJson(result.isOk() ? result.value : result.error);
 }
 
+const USAGE = `kanon <command>
+
+  init
+  source init [dir]
+  source add --path <path> --kind local|managed [--remote <url>] [--branch <name>]
+  source list
+  source remove <id>
+  source set <id> [--access read|write] [--refresh off|hourly|daily|weekly]
+  source probe [id]
+  index create <id> --source <uuid>
+  index list
+  index update [id] [--embed]
+  project add <id> --root <path>
+  grant <project> --index <id>
+  revoke <project> --index <id>
+  sync
+  search <query> --index <id> [--mode lexical|semantic|hybrid] [--limit <n>]
+  get <uri> --index <id>
+  status
+  doctor
+  mcp-config <project>
+  mcp --project <id>
+  refresh [source-id] [--force]
+  tick [--force]
+  jobs status
+  schedule install [--dry-run] | uninstall | status
+  ingest list
+  ingest scan <id>
+  ingest run <id> [--from-scan] [--limit <n>] [--dry-run] [--here]
+  device show
+  device rename <name>
+  connector add <id> --kind google-drive (--client-secret <json> | --service-account <json>)
+  connector auth <id>
+  connector list
+`;
+
+function isHelp(command: string): boolean {
+  return command === 'help' || command === '--help' || command === '-h';
+}
+
 export async function dispatchCli(cli: ParsedCli): Promise<void> {
+  if (isHelp(cli.command)) {
+    process.stdout.write(USAGE);
+    return;
+  }
   if (cli.command === 'init') {
     return cmdInit();
   }

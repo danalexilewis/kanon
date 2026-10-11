@@ -82,6 +82,27 @@ implementation changes.
 - [x] ADRs 0006 and 0007
 - [x] AGENTS.md table, docs index, `pnpm docs:index`
 
+### S7 — Two-step ingest
+
+The first real Drive job ran for minutes with no output, because listing
+and downloading were one silent pass. Agents and operators both do better with a scan they can
+read before anything is downloaded. The target layout is a one-way
+read-out of the connector, so it can change at any time; the scan is not a
+schema to protect.
+
+- [x] `kanon ingest scan <id>`: list only, compare with the operator
+  checkout, save `$KANON_CACHE/jobs/scans/<id>.json` (Drive id, Kanon
+  `doc.id`, folder, MIME type, revision, `download | unchanged | unsupported`,
+  files to remove), print totals per MIME type and folder
+- [x] `ingest run --from-scan` reuses the listing; refuses a scan for another
+  connector or folder
+- [x] `ingest run --limit <n>` downloads at most `n` changed items and reports
+  `deferred`; deferred items keep their prior file
+- [x] Progress on stderr: listing, `Downloading m of n`, one line per
+  document, push
+- [x] SDK exports `scanIngest`, `loadIngestScan`, `summarizeIngestScan`
+- [x] Docs: Google Drive guide, scheduled jobs, machine config, architecture
+
 ## Acceptance Criteria
 
 - [x] Ingest pushes only to probed write sources, to the configured remote and branch, never forced, only inside the job's target
@@ -94,6 +115,8 @@ implementation changes.
 
 ## Later
 
+- Include and exclude rules on a job (by folder or title) once scans show
+  which parts of a folder are worth keeping.
 - Converters for docx, PDF and other non-Markdown formats.
 - Dropbox and OneDrive connectors.
 - Raising refresh to hourly by default once daily has proved itself.
@@ -108,3 +131,4 @@ implementation changes.
 | S4 — Ingest pipeline | Done |
 | S5 — Google Drive | Done |
 | S6 — Docs | Done |
+| S7 — Two-step ingest | Done |
