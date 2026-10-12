@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { parseLocalRemote } from '../hosts/local.js';
+
 export const sourceRootSchema = z
   .object({
     path: z.string().min(1),
@@ -272,6 +274,12 @@ export const machineConfigSchema = z
           code: 'custom',
           path: ['circles', index, 'source'],
           message: `Circle ${circle.id}: source must be managed with access: write and a remote`,
+        });
+      } else if (parseLocalRemote(source.remote).kind !== 'local') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['circles', index, 'source'],
+          message: `Circle ${circle.id}: remote must be a local file:// path until a host probe exists`,
         });
       }
       const existing = sourcesInCircles.get(circle.source);

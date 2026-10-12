@@ -1,11 +1,15 @@
 import { ok } from 'neverthrow';
 import { describe, expect, it } from 'vitest';
 
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
+
 import { dispatchCli } from '../src/cli/commands.js';
 import { parseArgv } from '../src/cli/parse.js';
 import { saveMachineConfig } from '../src/config/machine.js';
 import type { MachineConfig } from '../src/config/schemas.js';
 import type { Connector } from '../src/connectors/types.js';
+import { ingestScanPath } from '../src/env.js';
 import { runIngest } from '../src/jobs/ingest.js';
 import { approveDocument } from '../src/review/actions.js';
 import { appendLedger, loadLedger } from '../src/review/io.js';
@@ -165,6 +169,87 @@ describe('review ledger and CLI', () => {
     });
     const { state } = await loadLedger('notes');
     expect(state['fake://note']?.approvals.team).toBeUndefined();
+  });
+
+  it('queues documents by title glob and folder', async () => {
+    const me = await createSourceRemote('rev-queue-me', ME);
+    const team = await createSourceRemote('rev-queue-team', TEAM);
+    const base = config(me, team);
+    const machine = {
+      ...base,
+      ingest: [{ ...base.ingest![0]!, id: 'inbox' }],
+    };
+    await saveMachineConfig(machine);
+    const scanPath = ingestScanPath('inbox');
+    await mkdir(dirname(scanPath), { recursive: true });
+    await writeFile(
+      scanPath,
+      `${JSON.stringify({
+        schema: 'kanon/ingest-scan/v2',
+        jobId: 'inbox',
+        connector: 'fake',
+        folder: 'root',
+        sourceId: ME,
+        target: 'docs/imported',
+        scannedAt: '2026-10-12T00:00:00.000Z',
+        totals: {
+          items: 2,
+          folders: 2,
+          download: 2,
+          unchanged: 0,
+          unsupported: 0,
+          remove: 0,
+          held: 0,
+          circles: { team: 0, me: 2 },
+        },
+        byMimeType: { 'text/plain': 2 },
+        folders: [],
+        remove: [],
+        items: [
+          {
+            externalId: 'a',
+            uri: 'fake://a',
+            docId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+            title: 'Standup',
+            relativeDir: '',
+            revision: '1',
+            formats: ['markdown'],
+            action: 'download',
+            readers: ['operator'],
+            others: 0,
+            external: 0,
+            sharing: 'full',
+            eligible: ['me'],
+          },
+          {
+            externalId: 'b',
+            uri: 'fake://b',
+            docId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+            title: 'Planning',
+            relativeDir: 'Meeting One',
+            revision: '1',
+            formats: ['markdown'],
+            action: 'download',
+            readers: ['operator'],
+            others: 0,
+            external: 0,
+            sharing: 'full',
+            eligible: ['me'],
+          },
+        ],
+      })}\n`,
+      'utf8',
+    );
+
+    await dispatchCli(
+      parseArgv(['review', 'queue', 'inbox', '--circle', 'team', '--title', 'stand*']),
+    );
+    await dispatchCli(
+      parseArgv(['review', 'queue', 'inbox', '--circle', 'team', '--folder', 'Meeting One']),
+    );
+    const { state } = await loadLedger('inbox');
+    expect([...state['fake://a']?.queued ?? []]).toEqual(['team']);
+    expect([...state['fake://b']?.queued ?? []]).toEqual(['team']);
   });
 
   it('does not list review commands as MCP tools', async () => {

@@ -78,7 +78,8 @@ ingest:
   `$KANON_HOME/credentials/<id>.json` with mode `0600`, written by
   `kanon connector add` and `kanon connector auth`.
 - An ingest job must point at a known connector and at a `route` of
-  circles. Each circle source is a managed write source with a remote.
+  circles. Each circle source is a managed write source with a local
+  `file://` remote. Hosted remotes are refused until a host probe exists.
   `kanon.yml` cannot declare people, circles or routes.
 - `target` is relative, has no `..`, and must sit inside a root declared by
   the source's `kanon.yml`. Targets are unique per source; the job owns the

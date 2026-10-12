@@ -13,7 +13,7 @@ function baseConfig(overrides: Record<string, unknown> = {}) {
         id: MANAGED,
         kind: 'managed',
         path: '/tmp/managed',
-        remote: 'git@example.com:org/docs.git',
+        remote: 'file:///tmp/managed.git',
         branch: 'main',
         access: 'write',
         refresh: 'daily',

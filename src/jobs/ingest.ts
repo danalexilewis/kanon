@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
-import { dirname, posix } from 'node:path';
+import { chmod, mkdir, rm, writeFile } from 'node:fs/promises';
+import { dirname, join, posix } from 'node:path';
 
 import { err, ok, type Result } from 'neverthrow';
 
@@ -43,7 +43,8 @@ import {
 import { createConnector } from '../connectors/registry.js';
 import type { Connector, ConnectorItem } from '../connectors/types.js';
 import { scanSourceDocuments } from '../core/documents.js';
-import { worktreeDir } from '../env.js';
+import { stagingDir, worktreeDir } from '../env.js';
+import { ensureOwnerOnlyDir } from '../files/owner-only.js';
 import { probeSourceWrite } from '../sources/access.js';
 import {
   gitFetchBranch,
@@ -394,6 +395,28 @@ async function resetWorktree(repo: string, dir: string): Promise<void> {
   await mkdir(dirname(dir), { recursive: true });
 }
 
+function stagingName(item: ConnectorItem): string {
+  return `${item.externalId.replaceAll('/', '_')}@${item.revision.replaceAll('/', '_')}`;
+}
+
+/** Write one downloaded document under `$KANON_CACHE/jobs/staging/<job>/` (0700 / 0600). */
+async function stageDocument(jobId: string, item: ConnectorItem, content: string): Promise<void> {
+  const dir = stagingDir(jobId);
+  await ensureOwnerOnlyDir(dir);
+  const path = join(dir, stagingName(item));
+  await writeFile(path, content, { encoding: 'utf8', mode: 0o600 });
+  await chmod(path, 0o600);
+}
+
+function isNarrower(route: readonly string[], from: string, to: string | undefined): boolean {
+  const fromIndex = route.indexOf(from);
+  if (fromIndex < 0) {
+    return false;
+  }
+  const toIndex = to === undefined ? route.length : route.indexOf(to);
+  return toIndex > fromIndex;
+}
+
 function commitMessage(job: MachineIngest, changes: MirrorChanges, deviceName: string | undefined): string {
   const summary = `+${changes.added.length} ~${changes.updated.length} -${changes.removed.length}`;
   const trailers = [`Kanon-Ingest: ${job.id}`, ...(deviceName !== undefined ? [`Kanon-Device: ${deviceName}`] : [])];
@@ -539,6 +562,7 @@ export async function runIngest(
         downloads += 1;
         if (fetched.isOk()) {
           body = splitFrontmatter(fetched.value).body;
+          await stageDocument(jobId, item, fetched.value);
         }
       }
     }
@@ -563,6 +587,10 @@ export async function runIngest(
       canShare,
     });
     placementByUri.set(item.uri, placement.circle);
+    if (prior !== undefined && isNarrower(job.route, prior.circleId, placement.circle)) {
+      narrowed.push(item.uri);
+      log(`Narrowed ${item.uri} from ${prior.circleId}; Git history in that circle still holds it`);
+    }
     if (placement.held) {
       held.push(item.uri);
       if (review.excluded !== true) {

@@ -325,6 +325,7 @@ const USAGE = `kanon <command>
   circle probe [id]
   circle check <id> --job <job> --add|--remove <person>
   review list|queue|level|approve|revoke|exclude|include|score
+  review queue <job> --circle <id> (<item>... | --folder <path> | --title <glob>)
   scorer add|list
   device show
   device rename <name>

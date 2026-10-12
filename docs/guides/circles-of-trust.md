@@ -92,5 +92,8 @@ Run that on the bare repo and the checkout, then `git gc`.
 
 ### Before hosting a circle
 
-Deferred. A hosted remote is `audience_unverified` until a host probe
-exists. Do not point `remote` at GitHub yet.
+Deferred. A circle source remote must be a local `file://` path. Config
+refuses GitHub and other hosts, and a hosted remote is also
+`audience_unverified` at push time. Ingest still fast-forwards the local
+bare repo; that is not a GitHub push. Do not point `remote` at a host
+until a host probe exists.

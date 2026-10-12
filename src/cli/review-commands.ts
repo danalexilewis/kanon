@@ -6,6 +6,7 @@ import { connectorAccount } from '../jobs/readers.js';
 import { approveDocument } from '../review/actions.js';
 import { appendLedger, documentState, loadLedger } from '../review/io.js';
 import type { ReviewEntry } from '../review/ledger.js';
+import { selectQueuedUris } from '../review/select.js';
 import { contentHash } from '../scoring/signals.js';
 import { scoreWithModel } from '../scoring/model.js';
 import { flagBool, flagString, type ParsedCli } from './parse.js';
@@ -25,15 +26,17 @@ async function assertJobDevice(jobDevice: string | undefined, here: boolean): Pr
   }
 }
 
-function resolveUris(scan: Awaited<ReturnType<typeof loadIngestScan>> extends infer T ? T : never, tokens: readonly string[]): string[] {
-  if (!('isOk' in scan) || !scan.isOk()) {
-    return [];
-  }
-  return tokens.map((token) => {
-    const uri = token.includes('://') ? token : `gdrive://${token}`;
-    const byUri = scan.value.items.find((item) => item.uri === uri || item.externalId === token || item.docId === token);
-    return byUri?.uri ?? uri;
-  });
+function resolveUris(
+  items: readonly {
+    readonly uri: string;
+    readonly externalId: string;
+    readonly docId: string;
+    readonly title: string;
+    readonly relativeDir: string;
+  }[],
+  tokens: readonly string[],
+): string[] {
+  return selectQueuedUris({ items, tokens });
 }
 
 async function loadJobScan(jobId: string) {
@@ -97,8 +100,10 @@ async function cmdReviewList(cli: ParsedCli): Promise<void> {
 async function cmdReviewQueue(cli: ParsedCli): Promise<void> {
   const jobId = cli.rest[0];
   const circle = flagString(cli.flags, 'circle');
+  const folder = flagString(cli.flags, 'folder');
+  const title = flagString(cli.flags, 'title');
   if (jobId === undefined || circle === undefined) {
-    throw new Error('review queue <job> --circle <id> <item>...');
+    throw new Error('review queue <job> --circle <id> (<item>... | --folder <path> | --title <glob>)');
   }
   const config = await requireConfig();
   const job = (config.ingest ?? []).find((entry) => entry.id === jobId);
@@ -106,8 +111,20 @@ async function cmdReviewQueue(cli: ParsedCli): Promise<void> {
     throw new Error('Unknown ingest job id');
   }
   await assertJobDevice(job.device, flagBool(cli.flags, 'here'));
-  const scan = await loadIngestScan(jobId);
-  const uris = resolveUris(scan, cli.rest.slice(1));
+  const scan = await loadJobScan(jobId);
+  const tokens = cli.rest.slice(1);
+  if (tokens.length === 0 && folder === undefined && title === undefined) {
+    throw new Error('review queue <job> --circle <id> (<item>... | --folder <path> | --title <glob>)');
+  }
+  const uris = selectQueuedUris({
+    items: scan.items,
+    tokens,
+    ...(folder !== undefined ? { folder } : {}),
+    ...(title !== undefined ? { title } : {}),
+  });
+  if (uris.length === 0) {
+    throw new Error('No documents matched');
+  }
   const by = await operatorBy(config, job.connector);
   for (const uri of uris) {
     await appendLedger(jobId, {
@@ -135,8 +152,8 @@ async function cmdReviewLevel(cli: ParsedCli): Promise<void> {
     throw new Error('Unknown ingest job id');
   }
   await assertJobDevice(job.device, flagBool(cli.flags, 'here'));
-  const scan = await loadIngestScan(jobId);
-  const [uri] = resolveUris(scan, [item]);
+  const scan = await loadJobScan(jobId);
+  const [uri] = resolveUris(scan.items, [item]);
   await appendLedger(jobId, {
     schema: 'kanon/review/v1',
     kind: 'level',
@@ -172,7 +189,7 @@ async function cmdReviewApprove(cli: ParsedCli): Promise<void> {
   const account = connector?.isOk() === true ? await connectorAccount(connector.value) : undefined;
   const by = account?.isOk() === true ? account.value : 'operator@example.test';
   const recorded: string[] = [];
-  for (const uri of resolveUris({ isOk: () => true, value: scan } as never, cli.rest.slice(1))) {
+  for (const uri of resolveUris(scan.items, cli.rest.slice(1))) {
     const item = scan.items.find((entry) => entry.uri === uri);
     const hash = contentHash(item !== undefined ? `# ${item.title}\n` : uri);
     const result = await approveDocument({
@@ -219,8 +236,8 @@ async function cmdReviewKind(kind: 'revoke' | 'exclude' | 'include', cli: Parsed
     throw new Error('Unknown ingest job id');
   }
   await assertJobDevice(job.device, flagBool(cli.flags, 'here'));
-  const scan = await loadIngestScan(jobId);
-  const [uri] = resolveUris(scan, [item]);
+  const scan = await loadJobScan(jobId);
+  const [uri] = resolveUris(scan.items, [item]);
   const entry: ReviewEntry = {
     schema: 'kanon/review/v1',
     kind,

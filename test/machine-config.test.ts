@@ -112,6 +112,25 @@ describe('machine config and grants', () => {
       scorers: [{ id: 'local', kind: 'openai-compatible', endpoint: 'http://127.0.0.1:11434/v1', model: 'm' }],
     });
     expect(loopback.isOk()).toBe(true);
+
+    const hosted = parseMachineConfig({
+      schema: 'kanon/machine/v1',
+      sources: [
+        {
+          id: me,
+          kind: 'managed',
+          path: '/tmp/x',
+          remote: 'git@github.com:example/notes.git',
+          access: 'write',
+        },
+      ],
+      indexes: [],
+      projects: [],
+      grants: [],
+      people: [{ id: 'operator', google: ['operator@example.test'] }],
+      circles: [{ id: 'me', source: me, members: ['operator'], ceiling: 3 }],
+    });
+    expect(hosted._unsafeUnwrapErr().message).toMatch(/local file:\/\//);
   });
 
   it('unknown and ungranted indexes look the same', async () => {

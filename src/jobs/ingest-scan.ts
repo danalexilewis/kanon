@@ -145,7 +145,11 @@ export async function ownedAcrossRoute(
 ): Promise<Result<{ readonly owned: Map<string, OwnedFile & { readonly circleId: string; readonly sourceId: string }> }, RailError<'invalid_config'>>> {
   const owned = new Map<string, OwnedFile & { readonly circleId: string; readonly sourceId: string }>();
   const target = ingestTarget(job);
-  for (const circle of (config.circles ?? []).filter((entry) => job.route.includes(entry.id))) {
+  for (const circleId of job.route) {
+    const circle = (config.circles ?? []).find((entry) => entry.id === circleId);
+    if (circle === undefined) {
+      continue;
+    }
     const source = config.sources.find((entry) => entry.id === circle.source);
     if (source === undefined) {
       continue;
